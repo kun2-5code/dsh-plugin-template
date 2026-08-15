@@ -1,5 +1,7 @@
 # dsh-plugin-template 的 bundle 层：安装进 profile 后由 dsh 加载。
 # 每个条目对应一个插件模块；后层按 id 覆盖前层，覆盖整行 config 而非深合并。
+# 配置除了在这里写，还可以在 GUI 设置 → 插件 → Configurable 里点击修改
+# （浏览器半边 src/client.ts，经 settings 命名空间 dsh-plugin-template 写入用户设置文档）。
 - insert:
     - id: dsh-plugin-template
       name: dsh-plugin-template

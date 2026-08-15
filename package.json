@@ -18,6 +18,7 @@
       "types": "./lib/hook.d.ts",
       "default": "./lib/hook.js"
     },
+    "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
@@ -25,6 +26,7 @@
     "lib/index.js",
     "lib/service.js",
     "lib/hook.js",
+    "lib/client.js",
     "lib/index.d.ts",
     "lib/service.d.ts",
     "lib/hook.d.ts",
@@ -33,6 +35,12 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "slots"
+      ]
     }
   },
   "scripts": {
@@ -52,16 +60,20 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.5",
     "@deepseek-ai/schemastery": "^3.18.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6"
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.5",
+    "react": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
     "@types/node": "^22.20.0",
+    "@types/react": "^18.3.0",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3"
   }
