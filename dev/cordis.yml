@@ -1,0 +1,12 @@
+# 本地开发 overlay：在 deepseek-harness 源码根目录运行
+#
+#   pnpm dsh web --patch /absolute/path/to/dsh-plugin-template/dev/cordis.yml
+#
+# 插件路径必须为绝对路径（overlay 不改变 profile 的模块解析目录）。
+# 把下面的 name 改成这个仓库在你机器上的绝对路径。
+- insert:
+    - id: dsh-plugin-template
+      name: '/absolute/path/to/dsh-plugin-template/src/index.ts'
+      config:
+        greeting: 'Hello from dev overlay'
+        verbose: true
