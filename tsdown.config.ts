@@ -5,7 +5,7 @@ import { defineConfig } from 'tsdown'
 // fixedExtension: false —— 包声明 "type": "module"，保持 .js/.d.ts 扩展名，
 // 与 package.json 的 exports 映射一致。
 export default defineConfig({
-  entry: ['src/index.ts', 'src/service.ts'],
+  entry: ['src/index.ts', 'src/service.ts', 'src/hook.ts'],
   outDir: 'lib',
   format: ['esm'],
   platform: 'node',

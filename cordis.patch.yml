@@ -11,3 +11,9 @@
     # 并确保构建产物 lib/service.js 存在（tsdown 已包含该入口）。
     # - id: dsh-plugin-template-service
     #   name: 'dsh-plugin-template/service'
+    #
+    # 可选：hook 权限门插件（见 src/hook.ts）。需要时删除下面两行注释。
+    # - id: dsh-plugin-template-permission-gate
+    #   name: 'dsh-plugin-template/hook'
+    #   config:
+    #     denyTools: ['bash']

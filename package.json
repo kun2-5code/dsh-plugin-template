@@ -14,14 +14,20 @@
       "types": "./lib/service.d.ts",
       "default": "./lib/service.js"
     },
+    "./hook": {
+      "types": "./lib/hook.d.ts",
+      "default": "./lib/hook.js"
+    },
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
     "lib/index.js",
     "lib/service.js",
+    "lib/hook.js",
     "lib/index.d.ts",
     "lib/service.d.ts",
+    "lib/hook.d.ts",
     "cordis.patch.yml"
   ],
   "dsh": {
