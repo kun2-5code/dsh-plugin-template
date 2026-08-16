@@ -97,12 +97,23 @@ export function injectStyles(): void {
 }
 .dtpl-dock-id { color: var(--dsw-alias-label-primary); font-weight: 500; }
 .dtpl-overlay {
-  margin: 8px; padding: 6px 12px; border-radius: 999px;
+  /* shell.overlay 层只是 inset:0 的全框层、不提供条目布局——条目自己定位
+     （toast 式：fixed 到右下角，避开导航与操作区）；层本身点击穿透，
+     条目自行 opt-in 指针事件。 */
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
   border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-3);
   font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary);
-  /* shell.overlay 层本身可穿透（click-through），条目自行 opt-in 指针事件。 */
   pointer-events: auto;
 }
+.dtpl-overlay-close {
+  appearance: none; border: 0; background: none; padding: 0; font: inherit; cursor: pointer;
+  font-size: 12px; line-height: 1; color: var(--dsw-alias-label-tertiary);
+}
+.dtpl-overlay-close:hover { color: var(--dsw-alias-label-primary); }
 .dtpl-header-util {
   appearance: none; border: 0; background: none; font: inherit; cursor: pointer;
   padding: 4px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5;
