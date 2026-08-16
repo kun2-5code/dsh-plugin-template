@@ -36,7 +36,7 @@ Beyond the slots, the host half demonstrates a tool render intent: the `greet` t
 10. **Plugins tab** — a new tab ("模板示例") in the Settings → Plugins page; the options' `label` is the tab text.
 11. **Settings action** — a button in the settings panel header, before Close.
 12. **Header action** — a toggle button beside the session title (the action row also hosts the built-in preset / jobs / subagent buttons).
-13. **Composer dock** — a status strip under the composer card. Unlike `input.dock`, this slot renders inside the bar's width column, so it inherits the card's constraint — mirror StatsLine's `--dsh-chat-content-width`, no self-positioning needed.
+13. **Composer dock** — a status strip under the composer card. Unlike `input.dock`, this slot renders inside the bar's width column, so it inherits the card's constraint — mirror StatsLine's full alignment (`--dsh-chat-content-width` + `margin: 0 auto` + centered text), no self-positioning needed.
 14. **Assistant action** — a "收藏" toggle button on every finalized AI message (the same row hosts message-feedback's copy/rating).
 
 ## How a surface is registered

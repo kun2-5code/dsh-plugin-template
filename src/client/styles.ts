@@ -147,8 +147,17 @@ export function injectStyles(): void {
 .dtpl-tab-content { padding: 16px; font-size: 13px; line-height: 1.6; color: var(--dsw-alias-label-secondary); }
 .dtpl-tab-content p { margin: 0 0 8px; }
 .dtpl-composer-strip {
-  box-sizing: border-box; width: 100%; max-width: var(--dsh-chat-content-width);
-  padding: 4px 12px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary);
+  /* 照内置 StatsLine 的完整对齐：条在输入卡片列内 margin auto 居中，
+     文字 text-align center（block 而非 flex，便于超长省略号）。 */
+  box-sizing: border-box;
+  display: block;
+  text-align: center;
+  width: 100%;
+  max-width: var(--dsh-chat-content-width);
+  margin: 0 auto;
+  padding: 4px calc(var(--dsh-composer-side-clearance) + 16px) 0;
+  font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .dtpl-badges { display: inline-flex; align-items: center; gap: 8px; }
 .dtpl-badge {
