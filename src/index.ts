@@ -16,7 +16,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
-import { registerDemoCommand } from './commands.ts'
+import { registerDemoCommand, registerHelloCommand } from './commands.ts'
 
 /** 插件显示名（诊断日志中使用）。 */
 export const name = 'dsh-plugin-template'
@@ -71,7 +71,9 @@ export function apply(ctx: Context, config: Config): void {
     onChange: () => {},
   })
 
-  // 0) 示例斜杠命令 /dsh-demo（配合浏览器半边的 commandview 渲染行做端到端演示）。
+  // 0) 示例斜杠命令：/hello 回复 world（默认渲染行）、/dsh-demo 回显输入
+  //    （配合浏览器半边的 commandview 自定义渲染行做端到端演示）。
+  registerHelloCommand(ctx)
   registerDemoCommand(ctx)
 
   // 1) 注册一个模型可调用的工具。output.render 是纯函数，把规范输出转成模型可见内容。

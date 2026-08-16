@@ -23,7 +23,7 @@
 4. **全局浮层**——全框架浮层上的一枚 pill（任意页面）。root 级；浮层层本身点击穿透，条目自行 opt-in 指针事件（`styles.ts` 里的 `pointer-events: auto`）。**布局注意**：该层只是 `inset: 0` 的全框层、不提供条目布局——条目自己定位；本示例按 toast 惯例用 `position: fixed` 钉在右下角并带关闭按钮。
 5. **会话头工具位**——会话标题右侧的右对齐徽标。session 级；展示注入的 `sessionId` 前 8 位（演示 session 级 list 插槽的 `inject` 工厂）。
 6. **工具行左端 / 7. 工具行右端**——输入卡片工具行左端（内置 chrome 之后）与右端（发送键旁）的常驻小按钮，与内置工具行 chrome 同一单行高度预算。
-8. **命令渲染行**——示例命令 `/dsh-demo` 的自定义渲染行。该插槽按命令名 keyed：host 半边（`src/commands.ts`）注册命令本体，`src/client/commandview.ts` 用 `key: DEMO_COMMAND_NAME` 注册渲染行。在输入框输入 `/dsh-demo 任意内容` 即可看到命令行（完整命令原文 + 结算状态）。
+8. **命令渲染行**——示例命令 `/dsh-demo` 的自定义渲染行。该插槽按命令名 keyed：host 半边（`src/commands.ts`）注册命令本体，`src/client/commandview.ts` 用 `key: DEMO_COMMAND_NAME` 注册渲染行。在输入框输入 `/dsh-demo 任意内容` 即可看到命令行（完整命令原文 + 结算状态）。host 半边还注册了 `/hello`（回复 world）且**不注册渲染行**——它走默认的 GenericCommandCard，是对照组：证明斜杠命令零 UI 注册即可用。
 
 ## 一个 UI 面怎么注册
 

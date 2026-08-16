@@ -79,6 +79,7 @@ assert.equal(await tool.execute({ name: 'Ada' }), 'Hi, Ada!')
   liveValue = { greeting: 'Yo', maxRetries: 1 }
   assert.equal(await liveTool.execute({ name: 'Bob' }), 'Yo, Bob!', '配置变更应实时生效')
   assert.ok(registeredCommands.some((c) => c.name === 'dsh-demo'), 'demo command should be registered')
+  assert.ok(registeredCommands.some((c) => c.name === 'hello'), 'hello command should be registered')
 }
 
 // hook 权限门：捕获注册的 tools/pre-execute 监听器，验证拒绝与放行两条路径。

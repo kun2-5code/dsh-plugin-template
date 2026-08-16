@@ -26,7 +26,7 @@ dsh-plugin-template/
 │   └── ui-surfaces.md  # where the plugin registers UI + index of every slot (bilingual: ui-surfaces.zh.md)
 ├── src/
 │   ├── index.ts        # main plugin: Config + tool + events + effect, config wired through the settings namespace
-│   ├── commands.ts     # host half: demo slash command /dsh-demo (fed by the commandview row)
+│   ├── commands.ts     # host half: demo slash commands /hello (replies world) and /dsh-demo (custom row)
 │   ├── service.ts      # optional example: Service provider (disabled by default)
 │   ├── hook.ts         # optional example: hook permission gate (disabled by default)
 │   └── client/         # browser half: one module per UI surface (see docs/ui-surfaces.md)

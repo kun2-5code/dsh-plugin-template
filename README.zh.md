@@ -26,7 +26,7 @@ dsh-plugin-template/
 │   └── ui-surfaces.zh.md  # 插件注册在哪些 UI 面上 + 插槽索引（英文版 ui-surfaces.md）
 ├── src/
 │   ├── index.ts        # 主插件：Config + 工具 + 事件 + effect，配置经 settings 命名空间实时接线
-│   ├── commands.ts     # host 半边：示例斜杠命令 /dsh-demo（配合 commandview 渲染行）
+│   ├── commands.ts     # host 半边：示例斜杠命令 /hello（回复 world）与 /dsh-demo（自定义渲染行）
 │   ├── service.ts      # 可选示例：Service 提供方（默认注释启用）
 │   ├── hook.ts         # 可选示例：hook 权限门（默认注释启用）
 │   └── client/         # 浏览器半边：每个 UI 面一个模块（见 docs/ui-surfaces.zh.md）
