@@ -42,12 +42,11 @@ export function injectStyles(): void {
 .dtpl-head-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .dtpl-name { font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--dsw-alias-label-primary); }
 .dtpl-description { font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
+/* 与内置 PluginCard 同款 chevron 图标（IconChevronDownOutline14）的样式。 */
 .dtpl-chevron {
   flex: none; color: var(--dsw-alias-label-tertiary); transition: transform .16s;
-  width: 8px; height: 8px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg); margin: -3px 4px 0 0;
 }
-.dtpl-chevron-open { transform: rotate(225deg); }
+.dtpl-chevron-open { transform: rotate(180deg); }
 .dtpl-body { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding-bottom: 8px; }
 .dtpl-read-only { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
 .dtpl-pending {
