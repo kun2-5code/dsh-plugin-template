@@ -96,6 +96,31 @@ export function injectStyles(): void {
   padding: 6px 12px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary);
 }
 .dtpl-dock-id { color: var(--dsw-alias-label-primary); font-weight: 500; }
+.dtpl-overlay {
+  margin: 8px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-3);
+  font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary);
+  /* shell.overlay 层本身可穿透（click-through），条目自行 opt-in 指针事件。 */
+  pointer-events: auto;
+}
+.dtpl-header-util {
+  appearance: none; border: 0; background: none; font: inherit; cursor: pointer;
+  padding: 4px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5;
+  color: var(--dsw-alias-label-secondary);
+}
+.dtpl-header-util:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.dtpl-input-tool {
+  appearance: none; border: 1px solid var(--dsw-alias-border-l2); background: none; font: inherit; cursor: pointer;
+  height: 28px; padding: 0 10px; border-radius: 8px; font-size: 12px; line-height: 1.5;
+  color: var(--dsw-alias-label-secondary); display: inline-flex; align-items: center; gap: 6px;
+}
+.dtpl-input-tool:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.dtpl-command {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 8px 12px; font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-primary);
+}
+.dtpl-command-line { color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dtpl-command-status { flex: none; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
 .dtpl-badges { display: inline-flex; align-items: center; gap: 8px; }
 .dtpl-badge {
   border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px; white-space: nowrap; font-weight: 500;

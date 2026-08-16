@@ -9,7 +9,7 @@ DeepSeek Harness（`dsh`）插件模板：一个可直接运行、可直接安�
 - **事件**：`ctx.on` / `ctx.emit` + declaration merging 类型化事件（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.zh.md)）
 - **Service**：类形式插件，为其他插件提供服务（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.zh.md)）
 - **Hook**：`tools/pre-execute` 权限门示例，按配置拒绝工具调用（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.zh.md)）
-- **客户端 UI（浏览器半边）**：`src/client/` 在**三个**面上注册浏览器 UI（索引见 [docs/ui-surfaces.zh.md](docs/ui-surfaces.zh.md)）：设置 → 插件 → Configurable 的**可点击配置卡片**（通过 settings 命名空间把 greeting / maxRetries / verbose 写进用户设置文档并实时生效；原版 harness 上卡片以只读"未暴露"状态渲染并说明原因，而不是消失）、左侧栏底部**操作按钮**、输入卡片上方**状态条**。只有配置卡片的数据路径受 harness 白名单门控，另外两个是纯插槽注册，任何 harness 上装完即用
+- **客户端 UI（浏览器半边）**：`src/client/` 在**八个**面上注册浏览器 UI（索引见 [docs/ui-surfaces.zh.md](docs/ui-surfaces.zh.md)）：设置 → 插件 → Configurable 的**可点击配置卡片**（通过 settings 命名空间把 greeting / maxRetries / verbose 写进用户设置文档并实时生效；原版 harness 上卡片以只读"未暴露"状态渲染并说明原因，而不是消失）、左侧栏底部**操作按钮**、输入卡片上方**状态条**、全框架**浮层 pill**、会话标题右侧**工具徽标**、输入工具行**左右小按钮**、以及示例命令 `/dsh-demo` 的**自定义命令渲染行**。只有配置卡片的数据路径受 harness 白名单门控，其余七个是纯插槽注册，任何 harness 上装完即用
 
 本模板按官方 [bundle 分发模型](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.zh.md) 组织：包内声明 `dsh.bundle` 与 `cordis.patch.yml`，用户 `dsh plugin add` 后即作为配置层生效。
 
@@ -26,16 +26,22 @@ dsh-plugin-template/
 │   └── ui-surfaces.zh.md  # 插件注册在哪些 UI 面上 + 插槽索引（英文版 ui-surfaces.md）
 ├── src/
 │   ├── index.ts        # 主插件：Config + 工具 + 事件 + effect，配置经 settings 命名空间实时接线
+│   ├── commands.ts     # host 半边：示例斜杠命令 /dsh-demo（配合 commandview 渲染行）
 │   ├── service.ts      # 可选示例：Service 提供方（默认注释启用）
 │   ├── hook.ts         # 可选示例：hook 权限门（默认注释启用）
 │   └── client/         # 浏览器半边：每个 UI 面一个模块（见 docs/ui-surfaces.zh.md）
 │       ├── index.ts        # client 入口：inject + apply，组装各注册
-│       ├── constants.ts    # 共用 NAMESPACE（与 package.json name / cordis.patch.yml 保持一致）
+│       ├── constants.ts    # 共用 NAMESPACE / DEMO_COMMAND_NAME（与 package.json name / cordis.patch.yml 保持一致）
 │       ├── types.ts        # ctx 服务的最小结构类型（不 import @deepseek-ai 客户端包）
 │       ├── styles.ts       # 一次性注入的 <style>，所有 dtpl-* class（只走主题变量）
 │       ├── config-card.ts  # settings.plugin.item：可点击配置卡片（暂存表单 + 状态说明）
 │       ├── sidebar-action.ts # sidebar.footer.action：侧栏底部按钮
-│       └── input-dock.ts   # conversation.input.dock：输入卡片上方状态条（session 级）
+│       ├── input-dock.ts   # conversation.input.dock：输入卡片上方状态条（session 级）
+│       ├── shell-overlay.ts # shell.overlay：全框架浮层 pill
+│       ├── header-utilities.ts # conversation.session.header.utilities：会话头右侧工具徽标
+│       ├── input-left.ts   # conversation.input.left：工具行左端小按钮
+│       ├── input-right.ts  # conversation.input.right：发送键旁小按钮
+│       └── commandview.ts  # conversation.chat.commandview：/dsh-demo 自定义渲染行
 └── test/smoke.mjs      # 构建产物冒烟测试（含 settings 接线单测）
 ```
 

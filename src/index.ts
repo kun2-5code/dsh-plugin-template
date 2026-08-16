@@ -16,6 +16,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { registerDemoCommand } from './commands.ts'
 
 /** 插件显示名（诊断日志中使用）。 */
 export const name = 'dsh-plugin-template'
@@ -69,6 +70,9 @@ export function apply(ctx: Context, config: Config): void {
     // 本示例所有字段都在使用点读取，无需为配置变更重建任何注册。
     onChange: () => {},
   })
+
+  // 0) 示例斜杠命令 /dsh-demo（配合浏览器半边的 commandview 渲染行做端到端演示）。
+  registerDemoCommand(ctx)
 
   // 1) 注册一个模型可调用的工具。output.render 是纯函数，把规范输出转成模型可见内容。
   ctx.tools.register(defineTool({

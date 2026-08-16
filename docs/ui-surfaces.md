@@ -9,12 +9,21 @@ This template demonstrates registering a browser UI on **three** surfaces of the
 | 1 | `settings.plugin.item` | 设置 → 插件 → Configurable（配置卡片） | root | `src/client/config-card.ts` | ui-settings-plugins (bash / agent-loop / web-search cards) |
 | 2 | `sidebar.footer.action` | 左侧栏底部、"设置"旁（按钮） | root | `src/client/sidebar-action.ts` | declared by ui-sidebar; **no built-in registrant (blank seat)** |
 | 3 | `conversation.input.dock` | 输入卡片上方一整行（状态条） | session | `src/client/input-dock.ts` | ui-goal (GoalDock) |
+| 4 | `shell.overlay` | 全框架浮层（pill） | root | `src/client/shell-overlay.ts` | declared by ui-layout; **blank seat** |
+| 5 | `conversation.session.header.utilities` | 会话标题右侧（工具徽标） | session | `src/client/header-utilities.ts` | declared by ui-conversation; **blank seat** |
+| 6 | `conversation.input.left` | 输入卡片工具行左端（小按钮） | session | `src/client/input-left.ts` | declared by ui-conversation; **blank seat** |
+| 7 | `conversation.input.right` | 工具行右端、发送键旁（小按钮） | session | `src/client/input-right.ts` | declared by ui-conversation; **blank seat** |
+| 8 | `conversation.chat.commandview` | 斜杠命令渲染行（`/dsh-demo`） | session | `src/client/commandview.ts` + host `src/commands.ts` | declared by ui-conversation; **blank seat** (GenericCommandCard fallback) |
 
 ## Where each one shows up
 
 1. **Config card** — Settings → Plugins → Configurable tab. Editable fields once the harness exposes the `dsh-plugin-template` namespace (see README "The config card on a stock harness"); otherwise a read-only explainer card.
 2. **Sidebar footer action** — a button at the bottom of the left sidebar, next to Settings. Wide sidebar shows "模板示例操作"; the collapsed rail shows a state dot only (reads the `wide` owner prop).
 3. **Input dock** — a status strip above the composer card in a conversation. Session-scoped: the registration's `inject` factory receives the `sessionId` and hands it to the component. **Layout note:** `conversation.input.dock` renders as a full-width row inside the composer stack; width and centering are each entry's own responsibility. Align with the composer card exactly as the built-in QueueDock does — constrain the width with the framework's layout variables (`--dsh-composer-card-max-width`, `--dsh-composer-dock-inset`) and center with `margin: 0 auto`. Never invent your own widths.
+4. **Shell overlay** — a floating pill on the frame-wide layer (any page). Root-scoped; the layer itself is click-through, and entries opt back into pointer events (`pointer-events: auto` in `styles.ts`).
+5. **Header utility** — a right-aligned badge next to the session title. Session-scoped; shows the first 8 chars of the injected `sessionId` (demonstrates the `inject` factory on a session list slot).
+6. **Input left / 7. Input right** — small always-visible controls at the left end of the composer tool row (after the resident chrome) and at the right end (next to the send button). Same one-row height budget as the built-in tool-row chrome.
+8. **Command row** — a custom renderer for the demo command `/dsh-demo`. The slot is keyed by command name; the host half (`src/commands.ts`) registers the command itself, and `src/client/commandview.ts` registers the row with `key: DEMO_COMMAND_NAME`. Type `/dsh-demo anything` in the input to see the row render the command lifecycle (line + settled outcome).
 
 ## How a surface is registered
 
@@ -44,11 +53,11 @@ Minimal structural types for `ctx.slots` live in `src/client/types.ts` (the temp
 
 The harness declares many more additive slots; the ones a plugin can register into include:
 
-- **Sidebar**: `sidebar.workspaces`, `sidebar.settings` (replacement seats), `sidebar.footer.action` (done above).
-- **Conversation chrome**: `conversation.session.header.actions` / `.utilities` (top action row), `conversation.composer.dock` (under the composer card), `conversation.input.left` / `.right` (in-card tool row), `conversation.input.overlay` (full-width overlay), `conversation.input.plan` / `.model` (named seats).
-- **Chat content**: `conversation.chat.node` (keyed business message nodes — see the harness cookbook `docs/cookbook/adding-a-conversation-node.md`), `conversation.chat.assistant-actions` (per-message buttons), `conversation.chat.turnTail` (chain), `conversation.chat.commandview` (slash-command rows), `conversation.view` (new tab).
-- **Tool**: `tool.call.toolview` (keyed by tool name), plus the tool's own `presentCall` / `presentResult` render intents on the host side.
-- **Global**: `shell.overlay` (frame-wide floating layer — badges, toasts).
+- **Sidebar**: `sidebar.workspaces`, `sidebar.settings` (replacement seats).
+- **Conversation chrome**: `conversation.session.header.actions` (top action row — built-in: agent-preset / jobs / subagent), `conversation.composer.dock` (under the composer card — built-in: StatsLine), `conversation.input.overlay` (full-width overlay — built-in: slash menu), `conversation.input.plan` / `.model` (named seats).
+- **Chat content**: `conversation.chat.node` (keyed business message nodes — see the harness cookbook `docs/cookbook/adding-a-conversation-node.md`), `conversation.chat.assistant-actions` (per-message buttons — built-in: message-feedback), `conversation.chat.turnTail` (chain — built-in: deliverables), `conversation.view` (new tab — built-in: trajectory).
+- **Tool**: `tool.call.toolview` (keyed by tool name — built-in: skill), plus the tool's own `presentCall` / `presentResult` render intents on the host side.
+- **Settings**: `settings.general.item` (one preference row), `settings.section` (a whole new settings page), `settings.plugins.tab`, `settings.action`, `settings.onboarding`.
 
 Slot declarations and their owner props live in the harness client packages (`packages/client/ui-conversation/src/client/contract/slots.ts`, `ui-sidebar/.../contract/slots.ts`, `ui-tool/...`, `ui-settings/...`, `ui-layout/...`).
 

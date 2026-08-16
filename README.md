@@ -9,7 +9,7 @@ A ready-to-run, ready-to-install starter template for [DeepSeek Harness](https:/
 - **Events** — `ctx.on` / `ctx.emit` with declaration merging for typed events ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.md))
 - **Service** — a class-form plugin that provides a service to other plugins ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.md))
 - **Hook** — a `tools/pre-execute` permission gate that denies tool calls by config ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md))
-- **Browser half (client)** — `src/client/` registers browser UI on **three surfaces** (index: [docs/ui-surfaces.md](docs/ui-surfaces.md)): a **clickable config card** under Settings → Plugins → Configurable (writes `greeting` / `maxRetries` / `verbose` into the settings document, taking effect live; on a stock harness the card renders a read-only "not exposed" explainer instead of vanishing), a **sidebar footer action** button, and an **input dock** strip above the composer. Only the config card's data path is gated by the harness allowlist; the other two are pure slot registrations that work on any harness.
+- **Browser half (client)** — `src/client/` registers browser UI on **eight surfaces** (index: [docs/ui-surfaces.md](docs/ui-surfaces.md)): a **clickable config card** under Settings → Plugins → Configurable (writes `greeting` / `maxRetries` / `verbose` into the settings document, taking effect live; on a stock harness the card renders a read-only "not exposed" explainer instead of vanishing), a **sidebar footer action** button, an **input dock** strip above the composer, a **shell overlay** pill, a **header utility** badge, **input tool-row buttons** (left/right), and a custom **command row** for the demo `/dsh-demo` command. Only the config card's data path is gated by the harness allowlist; the other seven are pure slot registrations that work on any harness.
 
 The template follows the official [bundle distribution model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md): the package declares `dsh.bundle` plus `cordis.patch.yml`, and `dsh plugin add` activates it as a config layer.
 
@@ -26,16 +26,22 @@ dsh-plugin-template/
 │   └── ui-surfaces.md  # where the plugin registers UI + index of every slot (bilingual: ui-surfaces.zh.md)
 ├── src/
 │   ├── index.ts        # main plugin: Config + tool + events + effect, config wired through the settings namespace
+│   ├── commands.ts     # host half: demo slash command /dsh-demo (fed by the commandview row)
 │   ├── service.ts      # optional example: Service provider (disabled by default)
 │   ├── hook.ts         # optional example: hook permission gate (disabled by default)
 │   └── client/         # browser half: one module per UI surface (see docs/ui-surfaces.md)
 │       ├── index.ts        # client entry: inject + apply, assembles the registrations
-│       ├── constants.ts    # shared NAMESPACE (keep in sync with package.json name / cordis.patch.yml)
+│       ├── constants.ts    # shared NAMESPACE + DEMO_COMMAND_NAME (keep in sync with package.json name / cordis.patch.yml)
 │       ├── types.ts        # minimal structural types for ctx services (no @deepseek-ai client imports)
 │       ├── styles.ts       # one injected <style> with all dtpl-* classes (theme tokens only)
 │       ├── config-card.ts  # settings.plugin.item: the clickable config card (staged form + status states)
 │       ├── sidebar-action.ts # sidebar.footer.action: sidebar-footer button
-│       └── input-dock.ts   # conversation.input.dock: strip above the composer (session-scoped)
+│       ├── input-dock.ts   # conversation.input.dock: strip above the composer (session-scoped)
+│       ├── shell-overlay.ts # shell.overlay: frame-wide floating pill
+│       ├── header-utilities.ts # conversation.session.header.utilities: right-aligned header badge
+│       ├── input-left.ts   # conversation.input.left: tool-row control at the left end
+│       ├── input-right.ts  # conversation.input.right: tool-row control next to send
+│       └── commandview.ts  # conversation.chat.commandview: custom row for /dsh-demo
 └── test/smoke.mjs      # smoke test on the build output (incl. settings wiring unit test)
 ```
 

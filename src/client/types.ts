@@ -39,10 +39,12 @@ export interface SettingsScopeBinderLike {
 export interface SlotOptions {
   /** 目标插槽名，如 'settings.plugin.item'。 */
   name: string
-  /** 条目标识；同插槽内唯一，按 order 升序渲染。 */
-  id: string
-  /** 渲染顺序；越小越靠前。 */
-  order: number
+  /** keyed 插槽的键（conversation.chat.commandview 按命令名、tool.call.toolview 按工具名）。 */
+  key?: string
+  /** list 插槽的条目标识；同插槽内唯一。 */
+  id?: string
+  /** 渲染顺序；越小越靠前（list 条目按 order 升序渲染）。 */
+  order?: number
   /** 列表条目显示标签（字符串或按 locale 变化的 thunk；本模板用固定字符串）。 */
   label?: string
   /** session 级插槽的注入工厂：收到 sessionId，返回注入给组件的面（结构随插槽而定）。 */
