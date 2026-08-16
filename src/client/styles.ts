@@ -86,7 +86,13 @@ export function injectStyles(): void {
 .dtpl-sidebar-action:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; }
 .dtpl-sidebar-dot { flex: none; font-size: 10px; line-height: 1; }
 .dtpl-dock {
-  display: flex; align-items: center; gap: 8px; min-width: 0;
+  box-sizing: border-box;
+  /* conversation.input.dock 渲染为全宽行；宽度/居中由条目自己负责。
+     与内置 QueueDock 对齐输入卡片：内容列 = 卡片宽 - 4 个 dock inset（= 对话正文宽）。 */
+  width: 100%;
+  max-width: calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));
+  margin: 0 auto;
+  display: flex; align-items: center; gap: 8px;
   padding: 6px 12px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary);
 }
 .dtpl-dock-id { color: var(--dsw-alias-label-primary); font-weight: 500; }
