@@ -1,6 +1,6 @@
 # 插件注册在哪些 UI 面上
 
-本模板演示了在 dsh web GUI 的**三个**面上注册浏览器 UI。它们都走同一个插槽 API（`ctx.slots.inject(...)` + `ctx.slots.register(...)`），来自客户端半边（`src/client/`），区别只有插槽 `name`。它们**都不依赖** `WEB_SETTINGS_NAMESPACES` 白名单——只有配置卡片的*数据路径*（settings 命名空间）受白名单门控，且卡片会渲染说明状态而不是消失。
+本模板演示了在 dsh web GUI 的**十四个**面上注册浏览器 UI（外加一个 host 侧工具渲染意图）。它们都走同一个插槽 API（`ctx.slots.inject(...)` + `ctx.slots.register(...)`），来自客户端半边（`src/client/`），区别只有插槽 `name`。它们**都不依赖** `WEB_SETTINGS_NAMESPACES` 白名单——只有配置卡片的*数据路径*（settings 命名空间）受白名单门控，且卡片会渲染说明状态而不是消失。
 
 ## 索引
 
@@ -14,6 +14,14 @@
 | 6 | `conversation.input.left` | 输入卡片工具行左端（小按钮） | session | `src/client/input-left.ts` | ui-conversation 声明；**空白加法位** |
 | 7 | `conversation.input.right` | 工具行右端、发送键旁（小按钮） | session | `src/client/input-right.ts` | ui-conversation 声明；**空白加法位** |
 | 8 | `conversation.chat.commandview` | 斜杠命令渲染行（`/dsh-demo`） | session | `src/client/commandview.ts` + host 侧 `src/commands.ts` | ui-conversation 声明；**空白加法位**（GenericCommandCard 兜底） |
+| 9 | `settings.general.item` | 设置 → 通用（一行偏好开关） | root | `src/client/general-item.ts` | locale / ui-theme / ui-conversation / permission / agent-preset |
+| 10 | `settings.plugins.tab` | 设置 → 插件（新 tab） | root | `src/client/plugins-tab.ts` | ui-settings-plugin-inventory |
+| 11 | `settings.action` | 设置面板头部操作按钮 | root | `src/client/settings-action.ts` | ui-settings-general |
+| 12 | `conversation.session.header.actions` | 会话标题旁操作按钮 | session | `src/client/header-actions.ts` | agent-preset / jobs / subagent |
+| 13 | `conversation.composer.dock` | 输入卡片下方状态条 | session | `src/client/composer-dock.ts` | StatsLine（ui-conversation） |
+| 14 | `conversation.chat.assistant-actions` | 每条 AI 消息的操作按钮 | session | `src/client/assistant-actions.ts` | ui-message-feedback |
+
+除插槽外，host 半边还演示了一个工具渲染意图：`greet` 工具定义了 `presentResult`（`src/index.ts`），把结果渲染成更友好的卡片。它不是插槽——是工具定义上的纯函数、可重放。`presentCall` / `presentationMeta` 仍未演示。
 
 ## 各自显示在哪
 
@@ -24,6 +32,12 @@
 5. **会话头工具位**——会话标题右侧的右对齐徽标。session 级；展示注入的 `sessionId` 前 8 位（演示 session 级 list 插槽的 `inject` 工厂）。
 6. **工具行左端 / 7. 工具行右端**——输入卡片工具行左端（内置 chrome 之后）与右端（发送键旁）的常驻小按钮，与内置工具行 chrome 同一单行高度预算。
 8. **命令渲染行**——示例命令 `/dsh-demo` 的自定义渲染行。该插槽按命令名 keyed：host 半边（`src/commands.ts`）注册命令本体，`src/client/commandview.ts` 用 `key: DEMO_COMMAND_NAME` 注册渲染行。在输入框输入 `/dsh-demo 任意内容` 即可看到命令行（完整命令原文 + 结算状态）。host 半边还注册了 `/hello`（回复 world）且**不注册渲染行**——它走默认的 GenericCommandCard，是对照组：证明斜杠命令零 UI 注册即可用。
+9. **通用设置行**——设置 → 通用页里的一行偏好（本地状态的开关行，自包含，参照内置的语言/外观行）。
+10. **插件页标签页**——设置 → 插件页里新增一个"模板示例"tab；选项里的 `label` 就是标签页文字。
+11. **设置头部操作**——设置面板内容列头部、关闭按钮前的按钮。
+12. **会话头操作**——会话标题旁的切换按钮（同一操作行里还有内置的预设 / jobs / subagent 按钮）。
+13. **输入卡片下方状态条**——与 `input.dock` 不同，本插槽渲染在输入条内部（宽度继承卡片列约束），照 StatsLine 用 `--dsh-chat-content-width` 对齐即可，无需自己定位。
+14. **消息操作**——每条已定稿的 AI 消息上的"收藏"切换按钮（同一行还有 message-feedback 的复制/评价）。
 
 ## 一个 UI 面怎么注册
 
@@ -54,10 +68,10 @@ export function registerXxx(ctx: Context): void {
 harness 声明了更多加法插槽，插件可以注册的有：
 
 - **侧栏**：`sidebar.workspaces`、`sidebar.settings`（替换型座）。
-- **对话页外壳**：`conversation.session.header.actions`（顶部操作行——内置：agent-preset / jobs / subagent）、`conversation.composer.dock`（输入卡片下方——内置：StatsLine）、`conversation.input.overlay`（全宽浮层——内置：斜杠菜单）、`conversation.input.plan` / `.model`（命名座）。
-- **消息流**：`conversation.chat.node`（按类型分发的业务消息节点——见 harness 的 `docs/cookbook/adding-a-conversation-node.md`）、`conversation.chat.assistant-actions`（每条消息上的按钮——内置：message-feedback）、`conversation.chat.turnTail`（chain——内置：deliverables）、`conversation.view`（新 tab——内置：trajectory）。
-- **工具**：`tool.call.toolview`（按工具名 keyed——内置：skill），以及 host 侧工具自身的 `presentCall` / `presentResult` 渲染意图。
-- **设置**：`settings.general.item`（一行偏好）、`settings.section`（整个新设置页）、`settings.plugins.tab`、`settings.action`、`settings.onboarding`。
+- **对话页外壳**：`conversation.input.overlay`（全宽浮层——内置：斜杠菜单）、`conversation.input.plan` / `.model`（命名座）。
+- **消息流**：`conversation.chat.node`（按类型分发的业务消息节点——见 harness 的 `docs/cookbook/adding-a-conversation-node.md`）、`conversation.chat.turnTail`（chain——内置：deliverables）、`conversation.view`（新 tab——内置：trajectory）。
+- **工具**：`tool.call.toolview`（按工具名 keyed——内置：skill）；host 侧 `presentCall` / `presentationMeta` 渲染意图仍未演示。
+- **设置**：`settings.section`（整个新设置页）、`settings.onboarding`。
 
 插槽声明与 owner props 在 harness 客户端包中（`packages/client/ui-conversation/src/client/contract/slots.ts`、`ui-sidebar/.../contract/slots.ts`、`ui-tool/...`、`ui-settings/...`、`ui-layout/...`）。
 

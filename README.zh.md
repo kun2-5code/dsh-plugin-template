@@ -9,7 +9,7 @@ DeepSeek Harness（`dsh`）插件模板：一个可直接运行、可直接安�
 - **事件**：`ctx.on` / `ctx.emit` + declaration merging 类型化事件（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.zh.md)）
 - **Service**：类形式插件，为其他插件提供服务（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.zh.md)）
 - **Hook**：`tools/pre-execute` 权限门示例，按配置拒绝工具调用（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.zh.md)）
-- **客户端 UI（浏览器半边）**：`src/client/` 在**八个**面上注册浏览器 UI（索引见 [docs/ui-surfaces.zh.md](docs/ui-surfaces.zh.md)）：设置 → 插件 → Configurable 的**可点击配置卡片**（通过 settings 命名空间把 greeting / maxRetries / verbose 写进用户设置文档并实时生效；原版 harness 上卡片以只读"未暴露"状态渲染并说明原因，而不是消失）、左侧栏底部**操作按钮**、输入卡片上方**状态条**、全框架**浮层 pill**、会话标题右侧**工具徽标**、输入工具行**左右小按钮**、以及示例命令 `/dsh-demo` 的**自定义命令渲染行**。只有配置卡片的数据路径受 harness 白名单门控，其余七个是纯插槽注册，任何 harness 上装完即用
+- **客户端 UI（浏览器半边）**：`src/client/` 在**十四个**面上注册浏览器 UI（索引见 [docs/ui-surfaces.zh.md](docs/ui-surfaces.zh.md)）：设置 → 插件 → Configurable 的**可点击配置卡片**（通过 settings 命名空间把 greeting / maxRetries / verbose 写进用户设置文档并实时生效；原版 harness 上卡片以只读"未暴露"状态渲染并说明原因，而不是消失）、左侧栏底部**操作按钮**、输入卡片上方**状态条**、全框架**浮层 pill**、会话标题右侧**工具徽标**、输入工具行**左右小按钮**、示例命令 `/dsh-demo` 的**自定义命令渲染行**、通用页**偏好行**、插件页**新 tab**、设置面板**头部操作**、会话标题旁**操作按钮**、输入卡片下方**状态条**、每条 AI 消息上的**操作按钮**——外加 `greet` 工具的 `presentResult` 渲染意图。只有配置卡片的数据路径受 harness 白名单门控，其余十三个是纯插槽注册，任何 harness 上装完即用
 
 本模板按官方 [bundle 分发模型](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.zh.md) 组织：包内声明 `dsh.bundle` 与 `cordis.patch.yml`，用户 `dsh plugin add` 后即作为配置层生效。
 
@@ -41,7 +41,13 @@ dsh-plugin-template/
 │       ├── header-utilities.ts # conversation.session.header.utilities：会话头右侧工具徽标
 │       ├── input-left.ts   # conversation.input.left：工具行左端小按钮
 │       ├── input-right.ts  # conversation.input.right：发送键旁小按钮
-│       └── commandview.ts  # conversation.chat.commandview：/dsh-demo 自定义渲染行
+│       ├── commandview.ts  # conversation.chat.commandview：/dsh-demo 自定义渲染行
+│       ├── general-item.ts # settings.general.item：设置 → 通用 一行偏好开关
+│       ├── plugins-tab.ts  # settings.plugins.tab：插件页新 tab
+│       ├── settings-action.ts # settings.action：设置面板头部操作按钮
+│       ├── header-actions.ts # conversation.session.header.actions：会话标题旁操作按钮
+│       ├── composer-dock.ts  # conversation.composer.dock：输入卡片下方状态条
+│       └── assistant-actions.ts # conversation.chat.assistant-actions：消息操作按钮
 └── test/smoke.mjs      # 构建产物冒烟测试（含 settings 接线单测）
 ```
 

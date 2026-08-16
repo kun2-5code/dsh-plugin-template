@@ -35,6 +35,7 @@ assert.deepEqual(inject, ['tools'])
 const tool = registered.find((t) => t.name === 'greet')
 assert.ok(tool, 'greet tool should be registered')
 assert.equal(await tool.execute({ name: 'Ada' }), 'Hi, Ada!')
+assert.equal(typeof tool.presentResult, 'function', 'greet tool should define presentResult')
 
 // settings 接线：模拟 settings 服务存在（installSettingsSection 的依赖立即满足），
 // 断言 greet 工具实时读取命名空间的解析值，而不是静态配置。

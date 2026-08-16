@@ -132,6 +132,24 @@ export function injectStyles(): void {
 }
 .dtpl-command-line { color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dtpl-command-status { flex: none; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.dtpl-btn {
+  appearance: none; border: 1px solid var(--dsw-alias-border-l2); background: none; font: inherit; cursor: pointer;
+  height: 28px; padding: 0 10px; border-radius: 8px; font-size: 12px; line-height: 1.5;
+  color: var(--dsw-alias-label-secondary); display: inline-flex; align-items: center; gap: 6px;
+}
+.dtpl-btn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.dtpl-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.dtpl-general-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 0; font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-primary);
+}
+.dtpl-general-row input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--dsw-alias-brand-primary); }
+.dtpl-tab-content { padding: 16px; font-size: 13px; line-height: 1.6; color: var(--dsw-alias-label-secondary); }
+.dtpl-tab-content p { margin: 0 0 8px; }
+.dtpl-composer-strip {
+  box-sizing: border-box; width: 100%; max-width: var(--dsh-chat-content-width);
+  padding: 4px 12px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary);
+}
 .dtpl-badges { display: inline-flex; align-items: center; gap: 8px; }
 .dtpl-badge {
   border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px; white-space: nowrap; font-weight: 500;

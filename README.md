@@ -9,7 +9,7 @@ A ready-to-run, ready-to-install starter template for [DeepSeek Harness](https:/
 - **Events** — `ctx.on` / `ctx.emit` with declaration merging for typed events ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.md))
 - **Service** — a class-form plugin that provides a service to other plugins ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.md))
 - **Hook** — a `tools/pre-execute` permission gate that denies tool calls by config ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md))
-- **Browser half (client)** — `src/client/` registers browser UI on **eight surfaces** (index: [docs/ui-surfaces.md](docs/ui-surfaces.md)): a **clickable config card** under Settings → Plugins → Configurable (writes `greeting` / `maxRetries` / `verbose` into the settings document, taking effect live; on a stock harness the card renders a read-only "not exposed" explainer instead of vanishing), a **sidebar footer action** button, an **input dock** strip above the composer, a **shell overlay** pill, a **header utility** badge, **input tool-row buttons** (left/right), and a custom **command row** for the demo `/dsh-demo` command. Only the config card's data path is gated by the harness allowlist; the other seven are pure slot registrations that work on any harness.
+- **Browser half (client)** — `src/client/` registers browser UI on **fourteen surfaces** (index: [docs/ui-surfaces.md](docs/ui-surfaces.md)): a **clickable config card** under Settings → Plugins → Configurable (writes `greeting` / `maxRetries` / `verbose` into the settings document, taking effect live; on a stock harness the card renders a read-only "not exposed" explainer instead of vanishing), a **sidebar footer action** button, an **input dock** strip above the composer, a **shell overlay** pill, a **header utility** badge, **input tool-row buttons** (left/right), a custom **command row** for `/dsh-demo`, a **General settings row**, a **Plugins tab**, a **settings header action**, a **session header action**, a **composer dock** strip, and **per-message actions** on AI replies — plus a `presentResult` render intent on the `greet` tool. Only the config card's data path is gated by the harness allowlist; the other thirteen are pure slot registrations that work on any harness.
 
 The template follows the official [bundle distribution model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md): the package declares `dsh.bundle` plus `cordis.patch.yml`, and `dsh plugin add` activates it as a config layer.
 
@@ -41,7 +41,13 @@ dsh-plugin-template/
 │       ├── header-utilities.ts # conversation.session.header.utilities: right-aligned header badge
 │       ├── input-left.ts   # conversation.input.left: tool-row control at the left end
 │       ├── input-right.ts  # conversation.input.right: tool-row control next to send
-│       └── commandview.ts  # conversation.chat.commandview: custom row for /dsh-demo
+│       ├── commandview.ts  # conversation.chat.commandview: custom row for /dsh-demo
+│       ├── general-item.ts # settings.general.item: one preference row in Settings → General
+│       ├── plugins-tab.ts  # settings.plugins.tab: a new tab in the Plugins page
+│       ├── settings-action.ts # settings.action: button in the settings header
+│       ├── header-actions.ts # conversation.session.header.actions: session-title action button
+│       ├── composer-dock.ts  # conversation.composer.dock: strip under the composer card
+│       └── assistant-actions.ts # conversation.chat.assistant-actions: per-message button
 └── test/smoke.mjs      # smoke test on the build output (incl. settings wiring unit test)
 ```
 

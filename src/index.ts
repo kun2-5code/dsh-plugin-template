@@ -87,6 +87,13 @@ export function apply(ctx: Context, config: Config): void {
       schema: { type: 'string' },
       render: (_args, value) => [{ type: 'text', text: value }],
     },
+    // 结果渲染意图（纯函数，可重放）：把模型可见的结果文本再美化一版给 UI
+    // 展示。省略则用通用卡片渲染原始结果内容。
+    presentResult: (_args, result) => ({
+      card: 'generic',
+      title: 'greet',
+      content: [{ type: 'text', text: `👋 ${result.content.map((block) => block.type === 'text' ? block.text : '').join('')}` }],
+    }),
     async execute(args) {
       const { greeting } = configSource()
       return `${greeting}, ${args.name}!`

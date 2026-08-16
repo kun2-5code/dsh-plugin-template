@@ -2,7 +2,8 @@
  * 客户端半边入口：唯一职责是把各 UI 面的注册组装起来，并导出 cordis 加载
  * 需要的 inject / apply。每个 UI 面一个独立模块（config-card / sidebar-action /
  * input-dock / shell-overlay / header-utilities / input-left / input-right /
- * commandview），各自的注册函数在 apply 里按序调用。
+ * commandview / general-item / plugins-tab / settings-action / header-actions /
+ * composer-dock / assistant-actions），各自的注册函数在 apply 里按序调用。
  *
  * 关于"开箱即用"：本入口注册的插槽全部是纯声明式 UI 注册，不受 harness 的
  * WEB_SETTINGS_NAMESPACES 白名单影响——侧栏按钮、输入区 Dock、浮层、工具位
@@ -21,6 +22,12 @@ import { registerHeaderUtility } from './header-utilities.ts'
 import { registerInputLeft } from './input-left.ts'
 import { registerInputRight } from './input-right.ts'
 import { registerCommandView } from './commandview.ts'
+import { registerGeneralItem } from './general-item.ts'
+import { registerPluginsTab } from './plugins-tab.ts'
+import { registerSettingsAction } from './settings-action.ts'
+import { registerHeaderAction } from './header-actions.ts'
+import { registerComposerDock } from './composer-dock.ts'
+import { registerAssistantAction } from './assistant-actions.ts'
 
 /** 依赖的服务：slots 就绪后本插件才会加载。 */
 export const inject = ['slots']
@@ -39,4 +46,10 @@ export function apply(ctx: Context): void {
   registerInputLeft(ctx)
   registerInputRight(ctx)
   registerCommandView(ctx)
+  registerGeneralItem(ctx)
+  registerPluginsTab(ctx)
+  registerSettingsAction(ctx)
+  registerHeaderAction(ctx)
+  registerComposerDock(ctx)
+  registerAssistantAction(ctx)
 }
