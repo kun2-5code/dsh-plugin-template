@@ -3,7 +3,7 @@
  * 配置（Config + Schemastery 校验）、工具注册（defineTool）、事件监听（ctx.on）、
  * 显式资源清理（ctx.effect），外加"配置可在 GUI 设置里点击修改"：
  * 配置通过 settings 命名空间（ctx.settings）接线，浏览器半边的配置卡片
- * （见 src/client.ts）写入用户设置文档，本插件实时读取。
+ * （见 src/client/）写入用户设置文档，本插件实时读取。
  * 注意：Web 设置面板的可见性受 harness 的 WEB_SETTINGS_NAMESPACES 白名单限制，
  * 只影响卡片的可编辑性，不影响本插件实时读取配置（详见 README）。
  *

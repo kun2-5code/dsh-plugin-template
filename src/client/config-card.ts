@@ -1,103 +1,29 @@
 /**
- * dsh-plugin-template 的浏览器半边（client plugin）：在 设置 → 插件 → Configurable
- * 里注册一张配置卡片，让 greeting / maxRetries / verbose 可以在 GUI 里点击修改。
+ * 设置卡片（settings.plugin.item 插槽）：在 设置 → 插件 → Configurable 里
+ * 注册一张配置卡片，让 greeting / maxRetries / verbose 可以在 GUI 里点击修改。
  *
- * 工作方式：
- * - host 半边（src/index.ts）用 installSettingsSection 把配置注册成 settings 命名空间
- *   `dsh-plugin-template`（cordis.yml 配置是 composition base 层）；
- * - 本文件在 `settings.plugin.item` 插槽注册卡片，通过 `settingsScope` 服务绑定该
- *   命名空间，读取解析值、展示表单、把用户改动写进用户设置文档（revision 防并发）；
- * - host 半边实时读取命名空间解析值，因此保存后立即生效。
+ * 数据链路：host 半边（src/index.ts）用 installSettingsSection 把配置注册成
+ * settings 命名空间（cordis.yml 配置是 composition base 层）；本模块经
+ * settingsScope 服务绑定该命名空间，读取解析值、展示表单、把用户改动写进
+ * 用户设置文档（revision 防并发）；host 半边实时读取命名空间解析值，因此
+ * 保存后立即生效。
  *
  * 关于"开箱即用"：卡片在任何状态下都渲染。harness 的 Web 网关只把白名单内的
- * settings 命名空间暴露给设置面板（WEB_SETTINGS_NAMESPACES，见
+ * settings 命名空间暴露给设置面板（WEB_SETTINGS_NAMESPACES，见 harness 的
  * packages/host/apiproxy/src/api-proxy.ts），第三方命名空间不在名单时
- * `settings.describe` 回答 settings-not-exposed——此时卡片渲染"未暴露"说明并给出
+ * settings.describe 回答 settings-not-exposed——此时卡片渲染"未暴露"说明并给出
  * 两条出路，而不是静默消失。该限制只影响卡片的可编辑性，不影响 host 半边
- * （greet 工具仍实时读取配置）；详见 README 的 "The config card on a stock
- * harness" 一节。
+ * （greet 工具仍实时读取配置）；详见 README 与 docs/ui-surfaces.md。
  *
  * UI 结构参考 harness 内置插件的设置卡片（packages/client/ui-settings-plugins：
- * WebSearchCard / PluginCard / ValueField / card-form）：
- * - 可折叠卡片头：名称 + 描述 + "未保存"徽标（折叠时也可见）+ 展开箭头；
- * - 暂存表单模型：编辑只进草稿，Save 是唯一的写入点，Discard 丢弃草稿，
- *   无效输入阻止保存并在字段下提示；保存后从 Host 接受的结果回读；
- * - 字段行：标签 + "已覆盖"徽标 + 重置（回退 composition base 层）+ 控件 + 提示；
- * - 颜色全部走主题变量（--dsw-alias-*，见 ui-theme/src/styles/design-platform.css），
- *   深浅色自动适配。
- *
- * 加载契约：与 host 半边同包，经 package.json 的 `dsh.client` 声明 +
- * `exports["./client"]` 被 dsh 的 client-modules 发现，浏览器加载构建产物
- * lib/client.js（CJS + __ModuleLoader__.load 握手，见 tsdown.config.ts）。
- * 注意：client 半边只在插件以"包名"安装进 profile 时才会加载；`--patch` overlay
- * 用绝对源码路径挂载的插件行不会加载 client 半边。
- *
- * 依赖纪律：运行时只 import react（浏览器平台模块表提供），其余一律走 ctx 服务，
- * 不直接 import 任何 @deepseek-ai 客户端包（避免跨插件值导入与版本分裂）。
- * 下面是各服务的最小结构类型，运行时实例来自 ctx；完整契约见
- * dsh-client-runtime 的 SettingsScope 与 dsh-client-ui-settings 的 SettingsScopeBinder。
- * @module dsh-plugin-template/client
+ * WebSearchCard / PluginCard / ValueField / card-form）。
+ * @module dsh-plugin-template/client/config-card
  */
 
 import React from 'react'
 import type { Context } from '@deepseek-ai/cordis'
-
-// ---- 最小结构类型（运行时实例来自 ctx 服务）----
-
-/** 一个 settings 命名空间在浏览器侧的同步快照（SettingsScopeSnapshot 的结构子集）。 */
-interface SettingsSnapshot {
-  status: 'loading' | 'ready' | 'unavailable'
-  /** 最近一次 schema 解析后的值（schema 默认 → base → 用户层）；首个接受值之前为 undefined。 */
-  value: unknown
-  /** 原始用户层（已存储）；字段在此出现即视为"用户覆盖"。 */
-  user: unknown
-  /** Host 文档是否可写（memory 模式永远不可写）。 */
-  writable: boolean
-}
-
-/** 浏览器侧 settings scope 的最小面（dsh-client-runtime SettingsScope 的结构子集）。 */
-interface SettingsScopeLike {
-  getSnapshot(): SettingsSnapshot
-  /** 观察快照替换；返回移除监听器的 disposer。 */
-  subscribe(listener: () => void): () => void
-  /** 写一个字段（自带 revision 围栏，写失败会重读 Host 状态）。 */
-  set(field: string, value: unknown): Promise<void>
-  /** 清除一个字段，让它重新继承 composition base 层。 */
-  unset(field: string): Promise<void>
-}
-
-/** settingsScope 服务的最小面（dsh-client-ui-settings SettingsScopeBinder）。 */
-interface SettingsScopeBinderLike {
-  bind(spec: { namespace: string }): SettingsScopeLike
-}
-
-/** 浏览器插槽服务的最小面（dsh-client-ui-slots 的结构子集；完整类型由该包的声明合并提供）。 */
-interface SlotsLike {
-  /** 等目标插槽被声明后注册贡献；返回移除该贡献的 disposer。 */
-  inject(name: string, register: () => unknown): void
-  /** 向一个已声明的插槽注册一项贡献（组件或返回元素的渲染函数）。 */
-  register(
-    options: { name: string; id: string; order: number; label: string },
-    component: () => React.ReactElement,
-  ): unknown
-}
-
-// 'slots' 是 inject 声明的必选依赖，按约定应通过 ctx.slots 使用；cordis 原生
-// Context 没有 slots 成员（其类型由 dsh-client-ui-slots 包的声明合并提供），而本
-// 模板不 import 任何 @deepseek-ai 客户端包（依赖纪律），因此用本地最小结构类型
-// 做声明合并，运行时实例来自 ctx。
-declare module '@deepseek-ai/cordis' {
-  interface Context {
-    /** 浏览器插槽服务（运行时由 client-ui-slots 提供）。 */
-    slots: SlotsLike
-  }
-}
-
-/** 本文件只注入一个 <style>；tsconfig 没有 dom lib，这里声明用到的 DOM 形状。 */
-declare const document: {
-  createElement(tag: 'style'): { dataset: Record<string, string>; textContent: string }
-  head: { appendChild(node: { dataset: Record<string, string>; textContent: string }): void }
-}
+import { NAMESPACE } from './constants.ts'
+import type { SettingsScopeBinderLike, SettingsScopeLike } from './types.ts'
 
 // ---- 字段声明 ----
 
@@ -354,22 +280,14 @@ class CardForm {
   }
 }
 
-// ---- 卡片 UI ----
-
-/** 本插件的 settings 命名空间（与 host 半边 installSettingsSection 一致）。 */
-const NAMESPACE = 'dsh-plugin-template'
-
-/** 依赖的服务：slots 就绪后本插件才会加载。 */
-export const inject = ['slots']
+// ---- 注册 ----
 
 /**
- * 客户端插件主体：绑定命名空间、构建暂存表单、注册配置卡片到 `settings.plugin.item` 插槽。
- * 卡片在任意状态下都渲染：settingsScope 缺失、命名空间未暴露、读取中都会渲染说明卡片，
- * 只有命名空间可用时才渲染可编辑表单（详见 ConfigCard 的状态矩阵）。
+ * 在 `settings.plugin.item` 插槽注册配置卡片。
+ * settingsScope 是设置界面提供的可选能力；缺失时卡片渲染"未挂载"状态而不是消失。
  * @param ctx - 客户端根上下文。
  */
-export function apply(ctx: Context): void {
-  // settingsScope 是设置界面提供的可选能力；缺失时卡片渲染"未挂载"状态而不是消失。
+export function registerConfigCard(ctx: Context): void {
   let form: CardForm | undefined
   const settingsScope: SettingsScopeBinderLike | undefined = ctx.get('settingsScope')
   if (settingsScope === undefined) {
@@ -378,14 +296,13 @@ export function apply(ctx: Context): void {
     form = new CardForm(settingsScope.bind({ namespace: NAMESPACE }))
   }
 
-  injectStyles()
-
-  // 'slots' 是 inject 声明的必选依赖，直接使用 ctx.slots（可选服务才用 ctx.get）。
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register(
     { name: 'settings.plugin.item', id: NAMESPACE, order: 30, label: NAMESPACE },
     () => React.createElement(ConfigCard, { form }),
   ))
 }
+
+// ---- 卡片 UI ----
 
 /**
  * 配置卡片：可折叠头 + 暂存表单 + 保存/放弃。
@@ -394,7 +311,7 @@ export function apply(ctx: Context): void {
  * return 之前——命名空间从 loading 变为 ready 时组件会重渲染，若 useState 写在
  * "不可用即 return null" 之后，hook 数量会从 2 变成 3，React 抛出 "Rendered
  * more hooks than during the previous render" 直接把卡片打崩（这正是本文件
- * 曾经的 bug）。
+ * 曾经的 bug，见提交 169005c）。
  *
  * 状态矩阵（卡片永远渲染，绝不静默消失）：
  * - form 为 undefined：settingsScope 服务未挂载（非 web profile），渲染"未挂载"说明；
@@ -571,91 +488,4 @@ function renderField(form: CardForm, spec: FieldSpec, shell: CardShell): React.R
       state.invalid ? spec.invalidLabel ?? '无效的值' : spec.hint,
     ),
   )
-}
-
-// ---- 样式：一次性注入 <style>（class 前缀 dtpl-，颜色全走主题变量）----
-
-let stylesInjected = false
-
-function injectStyles(): void {
-  if (stylesInjected || typeof document === 'undefined') return
-  stylesInjected = true
-  const tag = document.createElement('style')
-  tag.dataset.plugin = NAMESPACE
-  tag.dataset.pluginCss = `${NAMESPACE}/card`
-  tag.textContent = `
-.dtpl-card {
-  list-style: none;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  background: var(--dsw-alias-bg-layer-3);
-  transition: border-color .16s, background .16s;
-}
-.dtpl-card:hover { border-color: var(--dsw-alias-label-dimmed); }
-.dtpl-card-open { background: var(--dsw-alias-bg-layer-2); border-color: var(--dsw-alias-label-dimmed); }
-.dtpl-header {
-  width: 100%; appearance: none; border: 0; background: none; font: inherit;
-  color: inherit; text-align: left; cursor: pointer;
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px; border-radius: 12px;
-}
-.dtpl-header:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; }
-.dtpl-head-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.dtpl-name { font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--dsw-alias-label-primary); }
-.dtpl-description { font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
-.dtpl-chevron {
-  flex: none; color: var(--dsw-alias-label-tertiary); transition: transform .16s;
-  width: 8px; height: 8px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg); margin: -3px 4px 0 0;
-}
-.dtpl-chevron-open { transform: rotate(225deg); }
-.dtpl-body { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding-bottom: 8px; }
-.dtpl-read-only { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
-.dtpl-pending {
-  flex: none; border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px;
-  font-weight: 500; white-space: nowrap;
-  background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary);
-}
-.dtpl-footer {
-  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
-  padding: 12px 0 4px; border-top: 1px solid var(--dsw-alias-border-l2);
-}
-.dtpl-failed { flex: 1; min-width: 0; margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-state-error-primary); }
-.dtpl-discard, .dtpl-save {
-  appearance: none; border: 1px solid transparent; border-radius: 8px;
-  padding: 5px 14px; font: inherit; font-size: 13px; line-height: 1.5; cursor: pointer;
-}
-.dtpl-discard { border-color: var(--dsw-alias-border-l2); background: none; color: var(--dsw-alias-label-secondary); }
-.dtpl-discard:hover:not(:disabled) { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-label-dimmed); }
-.dtpl-save { background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-layer-3); }
-.dtpl-discard:disabled, .dtpl-save:disabled { opacity: 0.4; cursor: default; }
-.dtpl-discard:focus-visible, .dtpl-save:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
-.dtpl-field { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; }
-.dtpl-field + .dtpl-field { border-top: 1px solid var(--dsw-alias-border-l2); }
-.dtpl-field-head { display: flex; align-items: center; gap: 8px; }
-.dtpl-label { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--dsw-alias-label-primary); }
-.dtpl-status { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; }
-.dtpl-status-title { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--dsw-alias-label-primary); }
-.dtpl-status-body { margin: 0; font-size: 12px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); }
-.dtpl-badges { display: inline-flex; align-items: center; gap: 8px; }
-.dtpl-badge {
-  border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px; white-space: nowrap; font-weight: 500;
-  background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary);
-}
-.dtpl-reset { border: none; background: none; padding: 0; font: inherit; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary); cursor: pointer; }
-.dtpl-reset:hover:not(:disabled) { color: var(--dsw-alias-label-primary); }
-.dtpl-reset:disabled { cursor: default; }
-.dtpl-input {
-  height: 34px; padding: 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px;
-  background: var(--dsw-alias-bg-layer-3); font: inherit; font-size: 13px; line-height: 1.5;
-  color: var(--dsw-alias-label-primary);
-}
-.dtpl-input:focus-visible { outline: none; border-color: var(--dsw-alias-brand-primary); }
-.dtpl-input:disabled { color: var(--dsw-alias-label-tertiary); cursor: default; }
-.dtpl-input-invalid { border-color: var(--dsw-alias-state-error-primary); }
-.dtpl-checkbox { width: 16px; height: 16px; accent-color: var(--dsw-alias-brand-primary); }
-.dtpl-invalid { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-state-error-primary); }
-.dtpl-hint { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
-`
-  document.head.appendChild(tag)
 }

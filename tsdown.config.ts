@@ -27,7 +27,7 @@ const CLIENT_EXTERNALS = ['react']
 /** Client 半边：浏览器配置卡片 bundle，输出 lib/client.js。 */
 const client = {
   name: 'dsh-plugin-template/client',
-  entry: { client: 'src/client.ts' },
+  entry: { client: 'src/client/index.ts' },
   outDir: 'lib',
   format: 'cjs',
   platform: 'browser',

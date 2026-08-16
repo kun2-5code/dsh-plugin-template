@@ -9,7 +9,7 @@ A ready-to-run, ready-to-install starter template for [DeepSeek Harness](https:/
 - **Events** — `ctx.on` / `ctx.emit` with declaration merging for typed events ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.md))
 - **Service** — a class-form plugin that provides a service to other plugins ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.md))
 - **Hook** — a `tools/pre-execute` permission gate that denies tool calls by config ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md))
-- **Browser half (client)** — `src/client.ts` registers a **clickable config card** under Settings → Plugins → Configurable; it writes `greeting` / `maxRetries` / `verbose` into the user settings document through the settings namespace, taking effect live. On a stock harness the card renders a read-only "not exposed" status card and explains why (see below).
+- **Browser half (client)** — `src/client/` registers browser UI on **three surfaces** (index: [docs/ui-surfaces.md](docs/ui-surfaces.md)): a **clickable config card** under Settings → Plugins → Configurable (writes `greeting` / `maxRetries` / `verbose` into the settings document, taking effect live; on a stock harness the card renders a read-only "not exposed" explainer instead of vanishing), a **sidebar footer action** button, and an **input dock** strip above the composer. Only the config card's data path is gated by the harness allowlist; the other two are pure slot registrations that work on any harness.
 
 The template follows the official [bundle distribution model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md): the package declares `dsh.bundle` plus `cordis.patch.yml`, and `dsh plugin add` activates it as a config layer.
 
@@ -22,11 +22,20 @@ dsh-plugin-template/
 ├── tsdown.config.ts    # build config: Node library (lib/) + client bundle (lib/client.js), self-contained for git-install prepare
 ├── cordis.patch.yml    # bundle config layer: inserts the plugin rows
 ├── dev/cordis.yml      # local dev overlay (points at source; use with dsh web --patch; host half only)
+├── docs/
+│   └── ui-surfaces.md  # where the plugin registers UI + index of every slot (bilingual: ui-surfaces.zh.md)
 ├── src/
 │   ├── index.ts        # main plugin: Config + tool + events + effect, config wired through the settings namespace
-│   ├── client.ts       # browser half: clickable config card (settings.plugin.item slot)
 │   ├── service.ts      # optional example: Service provider (disabled by default)
-│   └── hook.ts         # optional example: hook permission gate (disabled by default)
+│   ├── hook.ts         # optional example: hook permission gate (disabled by default)
+│   └── client/         # browser half: one module per UI surface (see docs/ui-surfaces.md)
+│       ├── index.ts        # client entry: inject + apply, assembles the registrations
+│       ├── constants.ts    # shared NAMESPACE (keep in sync with package.json name / cordis.patch.yml)
+│       ├── types.ts        # minimal structural types for ctx services (no @deepseek-ai client imports)
+│       ├── styles.ts       # one injected <style> with all dtpl-* classes (theme tokens only)
+│       ├── config-card.ts  # settings.plugin.item: the clickable config card (staged form + status states)
+│       ├── sidebar-action.ts # sidebar.footer.action: sidebar-footer button
+│       └── input-dock.ts   # conversation.input.dock: strip above the composer (session-scoped)
 └── test/smoke.mjs      # smoke test on the build output (incl. settings wiring unit test)
 ```
 
@@ -109,11 +118,11 @@ Open `http://127.0.0.1:3080`:
 3. Back in a session, ask the model to call the `greet` tool — you should see the new greeting (the host half reads the resolved namespace value live, no restart);
 4. The change lands in the settings document (`settings.yaml` under `$DSH_HOME`) and survives restarts; to restore a default, edit the field back or clear it in the card.
 
-After editing `src/client.ts`, rerun `pnpm build` and refresh the page (the client bundle's rev query cache-busts).
+After editing the client half (`src/client/`), rerun `pnpm build` and refresh the page (the client bundle's rev query cache-busts).
 
 ### The config card on a stock harness (no source edits)
 
-The card is a browser plugin (`src/client.ts`) that binds the settings namespace `dsh-plugin-template` through the `settingsScope` service. It always renders — but on a stock harness it shows a read-only "not exposed" status card instead of editable fields. Why: dsh's web gateway serves settings namespaces only from an explicit allowlist (`WEB_SETTINGS_NAMESPACES` in `packages/host/apiproxy/src/api-proxy.ts`), and a namespace absent from it answers `settings-not-exposed` even when its owner plugin registered it. This is a harness-side registration decision (the same source comment calls moving the declaration into `settings.register()` "deferred work"), not a template defect: the built-in cards render because their namespaces (`shell`, `agent-loop`, …) are allowlisted, and there is currently no plugin-side channel to add one — the gateway's RPC map is compile-time fixed and no registration flag exists yet.
+The card is a browser plugin (`src/client/config-card.ts`) that binds the settings namespace `dsh-plugin-template` through the `settingsScope` service. It always renders — but on a stock harness it shows a read-only "not exposed" status card instead of editable fields. Why: dsh's web gateway serves settings namespaces only from an explicit allowlist (`WEB_SETTINGS_NAMESPACES` in `packages/host/apiproxy/src/api-proxy.ts`), and a namespace absent from it answers `settings-not-exposed` even when its owner plugin registered it. This is a harness-side registration decision (the same source comment calls moving the declaration into `settings.register()` "deferred work"), not a template defect: the built-in cards render because their namespaces (`shell`, `agent-loop`, …) are allowlisted, and there is currently no plugin-side channel to add one — the gateway's RPC map is compile-time fixed and no registration flag exists yet.
 
 What works on a stock harness with zero edits:
 - the entire host half — the `greet` tool, events, the service, the hook gate — including **live config reads**: writes are only gated at the web RPC, the plugin itself reads the resolved namespace value on every execution;
@@ -133,8 +142,8 @@ const WEB_SETTINGS_NAMESPACES = [
 
 ## Making it your own plugin
 
-1. Rename the package: keep `package.json` `name` (npm name, e.g. `dsh-my-plugin`), `src/index.ts` `name`, and `cordis.patch.yml` `id`/`name` consistent; when renaming the `./service` subpath, update `exports`/`files` too. **Renaming also touches three browser-half spots:** the client bundle `id` in `tsdown.config.ts` (`__ModuleLoader__.load({ id })`), `NAMESPACE` in `src/client.ts`, and `dsh.client` in `package.json` (if you need `inject`).
-2. Change the `Config` interface and `Config` schema: anything two deployments should be able to set differently must be a config field ([design principles](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/config.md#design-principles)). The config is wired to the settings namespace — does the GUI card auto-render a form from your schema? No: the card in `src/client.ts` is hand-written; add a field row there for each new config field.
+1. Rename the package: keep `package.json` `name` (npm name, e.g. `dsh-my-plugin`), `src/index.ts` `name`, and `cordis.patch.yml` `id`/`name` consistent; when renaming the `./service` subpath, update `exports`/`files` too. **Renaming also touches browser-half spots:** the client bundle `id` in `tsdown.config.ts` (`__ModuleLoader__.load({ id })`), `NAMESPACE` in `src/client/constants.ts`, and `dsh.client` in `package.json` (if you need `inject`).
+2. Change the `Config` interface and `Config` schema: anything two deployments should be able to set differently must be a config field ([design principles](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/config.md#design-principles)). The config is wired to the settings namespace — does the GUI card auto-render a form from your schema? No: the card in `src/client/config-card.ts` is hand-written; add a field row there for each new config field.
 3. Register your tool in `apply`: `ctx.tools.register(defineTool({...}))`; `execute` returns the canonical value declared by `output.schema`, and `output.render` is the pure function for model-visible rendering ([tool reference](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-tool.md)).
 4. To provide capabilities to other plugins, enable `src/service.ts` and uncomment its row in `cordis.patch.yml`.
 5. Remember to `declare module '@deepseek-ai/cordis'` to merge `Context` / `Events` types — that is what keeps cross-package boundaries type-safe.
@@ -144,7 +153,8 @@ const WEB_SETTINGS_NAMESPACES = [
 ## How the browser half works
 
 - `package.json` declares `dsh.client: { platform: "web" }` + `exports["./client"]` → dsh's client-modules discovers it and loads `lib/client.js` as a browser plugin;
-- `src/client.ts` registers a card in the `settings.plugin.item` slot and binds the `dsh-plugin-template` namespace via the `settingsScope` service: reads snapshots, stages drafts, and writes field-by-field on save (revision-fenced);
+- the client entry (`src/client/index.ts`) assembles one registration per UI surface — the config card (`settings.plugin.item`), the sidebar footer action (`sidebar.footer.action`), and the input dock (`conversation.input.dock`) — see the [UI surfaces index](docs/ui-surfaces.md);
+- the config card binds the `dsh-plugin-template` namespace via the `settingsScope` service: reads snapshots, stages drafts, and writes field-by-field on save (revision-fenced);
 - the host half (`src/index.ts`) registers the same namespace with `installSettingsSection` (the cordis.yml config is the `base` layer) and reads the resolved value lazily in the tool → saving takes effect immediately;
 - at runtime the client half depends only on `react` (provided by the browser platform module table); everything else goes through `ctx` services and no `@deepseek-ai` client package is imported — keep that discipline when editing the template.
 

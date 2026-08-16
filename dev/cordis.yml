@@ -6,7 +6,7 @@
 # 把下面的 name 改成这个仓库在你机器上的绝对路径。
 #
 # 注意：overlay 只加载 host 半边（模块解析到源码文件，发现不了 dsh.client 包级声明）。
-# 要测试浏览器半边的配置卡片（src/client.ts），必须把包安装进 profile：
+# 要测试浏览器半边的配置卡片（src/client/），必须把包安装进 profile：
 #   pnpm dsh plugin --profile web add /absolute/path/to/dsh-plugin-template && pnpm dsh web
 - insert:
     - id: dsh-plugin-template
