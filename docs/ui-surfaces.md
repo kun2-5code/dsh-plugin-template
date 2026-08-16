@@ -14,7 +14,7 @@ This template demonstrates registering a browser UI on **three** surfaces of the
 
 1. **Config card** — Settings → Plugins → Configurable tab. Editable fields once the harness exposes the `dsh-plugin-template` namespace (see README "The config card on a stock harness"); otherwise a read-only explainer card.
 2. **Sidebar footer action** — a button at the bottom of the left sidebar, next to Settings. Wide sidebar shows "模板示例操作"; the collapsed rail shows a state dot only (reads the `wide` owner prop).
-3. **Input dock** — a status strip above the composer card in a conversation. Session-scoped: the registration's `inject` factory receives the `sessionId` and hands it to the component.
+3. **Input dock** — a status strip above the composer card in a conversation. Session-scoped: the registration's `inject` factory receives the `sessionId` and hands it to the component. **Layout note:** `conversation.input.dock` renders as a full-width row inside the composer stack; width and centering are each entry's own responsibility. Align with the composer card exactly as the built-in QueueDock does — constrain the width with the framework's layout variables (`--dsh-composer-card-max-width`, `--dsh-composer-dock-inset`) and center with `margin: 0 auto`. Never invent your own widths.
 
 ## How a surface is registered
 
@@ -51,6 +51,15 @@ The harness declares many more additive slots; the ones a plugin can register in
 - **Global**: `shell.overlay` (frame-wide floating layer — badges, toasts).
 
 Slot declarations and their owner props live in the harness client packages (`packages/client/ui-conversation/src/client/contract/slots.ts`, `ui-sidebar/.../contract/slots.ts`, `ui-tool/...`, `ui-settings/...`, `ui-layout/...`).
+
+## Follow the framework
+
+The template deliberately does not invent its own look or layout values:
+
+- **Colors** come only from the harness theme tokens (`--dsw-alias-*`, defined in the `ui-theme` package) — no literal colors.
+- **Layout** comes only from the harness layout variables (`--dsh-*`, e.g. `--dsh-composer-card-max-width`, `--dsh-composer-dock-inset`, `--dsh-chat-content-width`) — no hand-picked widths.
+- **Slots are used as declared**: read the owner props and scope the contract gives you; never register into a slot the framework did not declare, and never re-type a share the framework already derives.
+- **When in doubt, mirror the closest built-in registrant** (QueueDock, GoalDock, StatsLine, …) instead of inventing a new pattern.
 
 ## Adding a new surface to this template
 

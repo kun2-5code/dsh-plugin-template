@@ -14,7 +14,7 @@
 
 1. **配置卡片**——设置 → 插件 → Configurable 页。harness 把 `dsh-plugin-template` 命名空间暴露后可编辑（见 README"原版 harness 上的配置卡片"）；否则渲染只读说明卡。
 2. **侧栏底部按钮**——左侧栏底部"设置"旁的按钮。宽栏显示"模板示例操作"；收起成窄栏（rail）时只显示状态点（读取 `wide` owner prop）。
-3. **输入区 Dock**——会话中输入卡片上方的一行状态条。session 级：注册时的 `inject` 工厂收到 `sessionId` 并交给组件。
+3. **输入区 Dock**——会话中输入卡片上方的一行状态条。session 级：注册时的 `inject` 工厂收到 `sessionId` 并交给组件。**布局注意**：`conversation.input.dock` 渲染为 composer 栈内的全宽行，宽度与居中由每个条目自己负责。对齐输入卡片的方式与内置 QueueDock 完全一致——用框架的布局变量（`--dsh-composer-card-max-width`、`--dsh-composer-dock-inset`）约束宽度，用 `margin: 0 auto` 居中；不要自己发明宽度数值。
 
 ## 一个 UI 面怎么注册
 
@@ -51,6 +51,15 @@ harness 声明了更多加法插槽，插件可以注册的有：
 - **全局**：`shell.overlay`（全框架浮层——badge、toast）。
 
 插槽声明与 owner props 在 harness 客户端包中（`packages/client/ui-conversation/src/client/contract/slots.ts`、`ui-sidebar/.../contract/slots.ts`、`ui-tool/...`、`ui-settings/...`、`ui-layout/...`）。
+
+## 跟着框架走
+
+模板刻意不发明自己的外观与布局数值：
+
+- **颜色**只用 harness 的主题变量（`--dsw-alias-*`，定义在 `ui-theme` 包）——不写任何字面色值。
+- **布局**只用 harness 的布局变量（`--dsh-*`，如 `--dsh-composer-card-max-width`、`--dsh-composer-dock-inset`、`--dsh-chat-content-width`）——不手写宽度。
+- **插槽按声明使用**：读取契约给你的 owner props 与作用域；不注册框架未声明的插槽，也不重写框架已派生的 share。
+- **拿不准时照抄最近的内置注册者**（QueueDock、GoalDock、StatsLine…），而不是发明新模式。
 
 ## 给本模板新增一个 UI 面
 
