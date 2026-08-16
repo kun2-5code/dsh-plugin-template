@@ -9,6 +9,14 @@
  *   命名空间，读取解析值、展示表单、把用户改动写进用户设置文档（revision 防并发）；
  * - host 半边实时读取命名空间解析值，因此保存后立即生效。
  *
+ * 关于"开箱即用"：卡片在任何状态下都渲染。harness 的 Web 网关只把白名单内的
+ * settings 命名空间暴露给设置面板（WEB_SETTINGS_NAMESPACES，见
+ * packages/host/apiproxy/src/api-proxy.ts），第三方命名空间不在名单时
+ * `settings.describe` 回答 settings-not-exposed——此时卡片渲染"未暴露"说明并给出
+ * 两条出路，而不是静默消失。该限制只影响卡片的可编辑性，不影响 host 半边
+ * （greet 工具仍实时读取配置）；详见 README 的 "The config card on a stock
+ * harness" 一节。
+ *
  * UI 结构参考 harness 内置插件的设置卡片（packages/client/ui-settings-plugins：
  * WebSearchCard / PluginCard / ValueField / card-form）：
  * - 可折叠卡片头：名称 + 描述 + "未保存"徽标（折叠时也可见）+ 展开箭头；
@@ -16,7 +24,7 @@
  *   无效输入阻止保存并在字段下提示；保存后从 Host 接受的结果回读；
  * - 字段行：标签 + "已覆盖"徽标 + 重置（回退 composition base 层）+ 控件 + 提示；
  * - 颜色全部走主题变量（--dsw-alias-*，见 ui-theme/src/styles/design-platform.css），
- *   深浅色自动适配；命名空间不可用时卡片不渲染（同内置卡片）。
+ *   深浅色自动适配。
  *
  * 加载契约：与 host 半边同包，经 package.json 的 `dsh.client` 声明 +
  * `exports["./client"]` 被 dsh 的 client-modules 发现，浏览器加载构建产物
@@ -61,6 +69,28 @@ interface SettingsScopeLike {
 /** settingsScope 服务的最小面（dsh-client-ui-settings SettingsScopeBinder）。 */
 interface SettingsScopeBinderLike {
   bind(spec: { namespace: string }): SettingsScopeLike
+}
+
+/** 浏览器插槽服务的最小面（dsh-client-ui-slots 的结构子集；完整类型由该包的声明合并提供）。 */
+interface SlotsLike {
+  /** 等目标插槽被声明后注册贡献；返回移除该贡献的 disposer。 */
+  inject(name: string, register: () => unknown): void
+  /** 向一个已声明的插槽注册一项贡献（组件或返回元素的渲染函数）。 */
+  register(
+    options: { name: string; id: string; order: number; label: string },
+    component: () => React.ReactElement,
+  ): unknown
+}
+
+// 'slots' 是 inject 声明的必选依赖，按约定应通过 ctx.slots 使用；cordis 原生
+// Context 没有 slots 成员（其类型由 dsh-client-ui-slots 包的声明合并提供），而本
+// 模板不 import 任何 @deepseek-ai 客户端包（依赖纪律），因此用本地最小结构类型
+// 做声明合并，运行时实例来自 ctx。
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    /** 浏览器插槽服务（运行时由 client-ui-slots 提供）。 */
+    slots: SlotsLike
+  }
 }
 
 /** 本文件只注入一个 <style>；tsconfig 没有 dom lib，这里声明用到的 DOM 形状。 */
@@ -126,6 +156,9 @@ interface FieldState {
 
 /** 卡片级状态（与 harness PluginCard 的 CardShell 对应）。 */
 interface CardShell {
+  /** 命名空间快照状态；ready 才渲染可编辑表单，其余状态渲染说明卡片。 */
+  status: 'loading' | 'ready' | 'unavailable'
+  /** 是否为可编辑状态（status === 'ready'）。 */
   available: boolean
   writable: boolean
   dirty: boolean
@@ -162,6 +195,7 @@ class CardForm {
     const snapshot = this.scope.getSnapshot()
     const plan = this.plan()
     return {
+      status: snapshot.status,
       available: snapshot.status === 'ready',
       writable: snapshot.writable,
       dirty: plan.length > 0,
@@ -330,39 +364,73 @@ export const inject = ['slots']
 
 /**
  * 客户端插件主体：绑定命名空间、构建暂存表单、注册配置卡片到 `settings.plugin.item` 插槽。
+ * 卡片在任意状态下都渲染：settingsScope 缺失、命名空间未暴露、读取中都会渲染说明卡片，
+ * 只有命名空间可用时才渲染可编辑表单（详见 ConfigCard 的状态矩阵）。
  * @param ctx - 客户端根上下文。
  */
 export function apply(ctx: Context): void {
-  const slots = ctx.get('slots')
-  if (slots === undefined) return
-
-  // settings 服务是设置界面提供的可选能力；缺失时卡片不渲染（与内置卡片一致）。
+  // settingsScope 是设置界面提供的可选能力；缺失时卡片渲染"未挂载"状态而不是消失。
   let form: CardForm | undefined
   const settingsScope: SettingsScopeBinderLike | undefined = ctx.get('settingsScope')
   if (settingsScope === undefined) {
-    console.warn(`[${NAMESPACE}] settingsScope service absent; the config card is disabled`)
+    console.warn(`[${NAMESPACE}] settingsScope service absent; the config card shows the unmounted state`)
   } else {
     form = new CardForm(settingsScope.bind({ namespace: NAMESPACE }))
   }
 
   injectStyles()
 
-  slots.inject('settings.plugin.item', () => slots.register(
+  // 'slots' 是 inject 声明的必选依赖，直接使用 ctx.slots（可选服务才用 ctx.get）。
+  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register(
     { name: 'settings.plugin.item', id: NAMESPACE, order: 30, label: NAMESPACE },
     () => React.createElement(ConfigCard, { form }),
   ))
 }
 
-/** 配置卡片：可折叠头 + 暂存表单 + 保存/放弃。命名空间不可用时渲染为空（同内置卡片）。 */
+/**
+ * 配置卡片：可折叠头 + 暂存表单 + 保存/放弃。
+ *
+ * hook 纪律：所有 hook（useReducer / useState / useEffect）必须位于任何提前
+ * return 之前——命名空间从 loading 变为 ready 时组件会重渲染，若 useState 写在
+ * "不可用即 return null" 之后，hook 数量会从 2 变成 3，React 抛出 "Rendered
+ * more hooks than during the previous render" 直接把卡片打崩（这正是本文件
+ * 曾经的 bug）。
+ *
+ * 状态矩阵（卡片永远渲染，绝不静默消失）：
+ * - form 为 undefined：settingsScope 服务未挂载（非 web profile），渲染"未挂载"说明；
+ * - status 'loading'：仍在读取命名空间，渲染"正在读取"；
+ * - status 'unavailable'：命名空间未对 Web 暴露（harness 的 WEB_SETTINGS_NAMESPACES
+ *   白名单，见 README）或设置服务未注册，渲染"未暴露"说明与两条出路；
+ * - status 'ready'：渲染可编辑表单。
+ */
 function ConfigCard({ form }: { form: CardForm | undefined }): React.ReactElement | null {
   const [, forceRender] = React.useReducer((count: number) => count + 1, 0)
+  const [open, setOpen] = React.useState(false)
   React.useEffect(() => (form === undefined ? undefined : form.subscribe(forceRender)), [form])
-  if (form === undefined) return null
+
+  if (form === undefined) {
+    return statusCard(
+      '配置卡片未挂载',
+      '设置服务（settingsScope）未提供；web profile（dsh-web-app）自带该服务，请用 dsh web 启动。',
+    )
+  }
 
   const shell = form.shell()
-  if (!shell.available) return null
+  if (!shell.available) {
+    if (shell.status === 'unavailable') {
+      return statusCard(
+        `配置命名空间 ${NAMESPACE} 未对 Web 暴露`,
+        'harness 的 Web 网关只向设置面板暴露白名单内的 settings 命名空间（WEB_SETTINGS_NAMESPACES，'
+        + '见 packages/host/apiproxy/src/api-proxy.ts），本命名空间不在名单里，因此 `settings.describe` '
+        + '回答 settings-not-exposed。host 半边不受影响：greet 工具仍实时读取配置。',
+        '要让本卡片可编辑：在 harness 的 WEB_SETTINGS_NAMESPACES 里加一行 '
+        + `${NAMESPACE} 后重建/重启 harness；或等 harness 把暴露声明移进 `
+        + 'settings.register()（源码注释标注的 deferred work）。',
+      )
+    }
+    return statusCard('正在读取配置…', '命名空间数据到达后本卡片会自动切换为可编辑状态。')
+  }
 
-  const [open, setOpen] = React.useState(false)
   const blocked = !shell.dirty || shell.invalid || shell.saving
 
   return React.createElement(
@@ -422,6 +490,23 @@ function ConfigCard({ form }: { form: CardForm | undefined }): React.ReactElemen
         ),
       )
       : null,
+  )
+}
+
+/** 渲染一张只读状态卡片（未挂载 / 读取中 / 未暴露），说明而非静默消失。 */
+function statusCard(title: string, body: string, remedy?: string): React.ReactElement {
+  return React.createElement(
+    'li',
+    { className: 'dtpl-card' },
+    React.createElement(
+      'div',
+      { className: 'dtpl-status' },
+      React.createElement('p', { className: 'dtpl-status-title' }, title),
+      React.createElement('p', { className: 'dtpl-status-body' }, body),
+      remedy === undefined
+        ? null
+        : React.createElement('p', { className: 'dtpl-status-body' }, remedy),
+    ),
   )
 }
 
@@ -549,6 +634,9 @@ function injectStyles(): void {
 .dtpl-field + .dtpl-field { border-top: 1px solid var(--dsw-alias-border-l2); }
 .dtpl-field-head { display: flex; align-items: center; gap: 8px; }
 .dtpl-label { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--dsw-alias-label-primary); }
+.dtpl-status { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; }
+.dtpl-status-title { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--dsw-alias-label-primary); }
+.dtpl-status-body { margin: 0; font-size: 12px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); }
 .dtpl-badges { display: inline-flex; align-items: center; gap: 8px; }
 .dtpl-badge {
   border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px; white-space: nowrap; font-weight: 500;

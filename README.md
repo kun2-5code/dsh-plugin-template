@@ -9,7 +9,7 @@ A ready-to-run, ready-to-install starter template for [DeepSeek Harness](https:/
 - **Events** — `ctx.on` / `ctx.emit` with declaration merging for typed events ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.md))
 - **Service** — a class-form plugin that provides a service to other plugins ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.md))
 - **Hook** — a `tools/pre-execute` permission gate that denies tool calls by config ([docs](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md))
-- **Browser half (client)** — `src/client.ts` registers a **clickable config card** under Settings → Plugins → Configurable; it writes `greeting` / `maxRetries` / `verbose` into the user settings document through the settings namespace, taking effect live.
+- **Browser half (client)** — `src/client.ts` registers a **clickable config card** under Settings → Plugins → Configurable; it writes `greeting` / `maxRetries` / `verbose` into the user settings document through the settings namespace, taking effect live. On a stock harness the card renders a read-only "not exposed" status card and explains why (see below).
 
 The template follows the official [bundle distribution model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md): the package declares `dsh.bundle` plus `cordis.patch.yml`, and `dsh plugin add` activates it as a config layer.
 
@@ -85,6 +85,8 @@ pnpm build
 node test/smoke.mjs
 ```
 
+> If this repo sits INSIDE a `deepseek-harness` checkout (nested, as in the harness repo root), `pnpm install` is captured by the parent workspace and installs nothing here — the template is not a workspace member. Use `pnpm install --ignore-workspace` (pnpm ≥9.5) so the template installs its own `node_modules` from its own lockfile; or clone the template standalone.
+
 ### Testing the config card (in the GUI)
 
 The config card renders in the browser and depends on dsh's client-modules discovering the `dsh.client` declaration **by package name**, so the package must be installed into a profile (a `--patch` source path won't do):
@@ -102,15 +104,23 @@ dsh web
 
 Open `http://127.0.0.1:3080`:
 
-1. Bottom-left **Settings** → **Plugins** → **Configurable** tab: you should see a `dsh-plugin-template` card with editable `greeting` / `maxRetries` / `verbose` fields;
+1. Bottom-left **Settings** → **Plugins** → **Configurable** tab: you should see a `dsh-plugin-template` card. On a stock harness it renders a read-only "not exposed" status card (see below); after the one-line harness change it renders the editable `greeting` / `maxRetries` / `verbose` fields;
 2. Change `greeting`, click **Save** — the status line should confirm it takes effect immediately;
 3. Back in a session, ask the model to call the `greet` tool — you should see the new greeting (the host half reads the resolved namespace value live, no restart);
 4. The change lands in the settings document (`settings.yaml` under `$DSH_HOME`) and survives restarts; to restore a default, edit the field back or clear it in the card.
 
 After editing `src/client.ts`, rerun `pnpm build` and refresh the page (the client bundle's rev query cache-busts).
 
-> ⚠️ **Known harness limitation (one-time setup, please read):** whether the card shows depends on the `WEB_SETTINGS_NAMESPACES` allowlist in harness's
-> `packages/host/apiproxy/src/api-proxy.ts` — a namespace absent from the list is treated as "not exposed" by `settings.describe` even when the plugin registered it, so the card does not render. Add one line to your harness checkout:
+### The config card on a stock harness (no source edits)
+
+The card is a browser plugin (`src/client.ts`) that binds the settings namespace `dsh-plugin-template` through the `settingsScope` service. It always renders — but on a stock harness it shows a read-only "not exposed" status card instead of editable fields. Why: dsh's web gateway serves settings namespaces only from an explicit allowlist (`WEB_SETTINGS_NAMESPACES` in `packages/host/apiproxy/src/api-proxy.ts`), and a namespace absent from it answers `settings-not-exposed` even when its owner plugin registered it. This is a harness-side registration decision (the same source comment calls moving the declaration into `settings.register()` "deferred work"), not a template defect: the built-in cards render because their namespaces (`shell`, `agent-loop`, …) are allowlisted, and there is currently no plugin-side channel to add one — the gateway's RPC map is compile-time fixed and no registration flag exists yet.
+
+What works on a stock harness with zero edits:
+- the entire host half — the `greet` tool, events, the service, the hook gate — including **live config reads**: writes are only gated at the web RPC, the plugin itself reads the resolved namespace value on every execution;
+- the card slot itself: the card appears under Settings → Plugins → Configurable and explains the exposure state instead of vanishing silently.
+
+To make the card editable, pick one:
+1. add `'dsh-plugin-template'` to `WEB_SETTINGS_NAMESPACES` in `packages/host/apiproxy/src/api-proxy.ts` (one line; rebuild/restart the harness; lost when you update the checkout):
 
 ```ts
 const WEB_SETTINGS_NAMESPACES = [
@@ -119,7 +129,7 @@ const WEB_SETTINGS_NAMESPACES = [
 ] as const
 ```
 
-> This is the harness's current registration decision point (source comment: "adding a section to that page is a decision made here rather than by the registering plugin. Moving that declaration to `settings.register()` … is deferred work"). Once the harness moves the exposure declaration into `settings.register()`, the template no longer needs this line. The change is a local source edit: it is lost when you update/reinstall a fresh harness checkout and must be re-applied.
+2. wait for the harness's deferred work — moving the exposure declaration into `settings.register()` — which this template already targets by registering the namespace the canonical way (`installSettingsSection`).
 
 ## Making it your own plugin
 

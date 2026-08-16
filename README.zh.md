@@ -9,7 +9,7 @@ DeepSeek Harness（`dsh`）插件模板：一个可直接运行、可直接安�
 - **事件**：`ctx.on` / `ctx.emit` + declaration merging 类型化事件（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.zh.md)）
 - **Service**：类形式插件，为其他插件提供服务（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.zh.md)）
 - **Hook**：`tools/pre-execute` 权限门示例，按配置拒绝工具调用（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.zh.md)）
-- **客户端 UI（浏览器半边）**：`src/client.ts` 在 设置 → 插件 → Configurable 里注册一张**可点击的配置卡片**，通过 settings 命名空间把 greeting / maxRetries / verbose 写进用户设置文档并实时生效
+- **客户端 UI（浏览器半边）**：`src/client.ts` 在 设置 → 插件 → Configurable 里注册一张**可点击的配置卡片**，通过 settings 命名空间把 greeting / maxRetries / verbose 写进用户设置文档并实时生效；原版 harness 上卡片以只读"未暴露"状态渲染并说明原因（见下文）
 
 本模板按官方 [bundle 分发模型](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.zh.md) 组织：包内声明 `dsh.bundle` 与 `cordis.patch.yml`，用户 `dsh plugin add` 后即作为配置层生效。
 
@@ -85,6 +85,8 @@ pnpm build
 node test/smoke.mjs
 ```
 
+> 如果本仓库**嵌在** `deepseek-harness` 检出里（如放在 harness 仓库根目录下的嵌套仓库），`pnpm install` 会被父 workspace 捕获，不会给本仓库装依赖（本仓库不是 workspace 成员）。此时用 `pnpm install --ignore-workspace`（pnpm ≥9.5），让模板用自己的 pnpm-lock.yaml 装出独立 node_modules；或者把模板单独 clone 出来开发。
+
 ### 测试配置卡片（在 GUI 点击修改）
 
 配置卡片在浏览器里渲染，依赖 dsh 的 client-modules 按**包名**发现 `dsh.client` 声明，所以必须把包安装进 profile（`--patch` 源码路径不行）：
@@ -102,17 +104,23 @@ dsh web
 
 打开 `http://127.0.0.1:3080`：
 
-1. 左下角 **设置** → **插件** → **Configurable** 页，应看到一张 `dsh-plugin-template` 卡片，含 `greeting` / `maxRetries` / `verbose` 三个可编辑字段；
+1. 左下角 **设置** → **插件** → **Configurable** 页，应看到一张 `dsh-plugin-template` 卡片。原版 harness 上它渲染为只读的"未暴露"状态卡（见下文）；完成 harness 一行改动后渲染为含 `greeting` / `maxRetries` / `verbose` 三个可编辑字段的表单；
 2. 把 `greeting` 改成别的值，点 **保存**，状态行应提示"修改后点击保存立即生效"；
 3. 回到会话，让模型调用 `greet` 工具，应看到新 greeting（host 半边实时读取命名空间解析值，无需重启）；
 4. 用户改动写进设置文档（`$DSH_HOME` 下的 `settings.yaml`），重启后依然生效；想恢复默认就在卡片里改回或清除对应字段。
 
 改动 `src/client.ts` 后重跑 `pnpm build` 即可，刷新页面（client bundle 带 rev 缓存失效）生效。
 
-> ⚠️ **已知 harness 限制（一次性设置，必读）**：卡片能否显示，取决于 harness 的
-> `packages/host/apiproxy/src/api-proxy.ts` 里的 `WEB_SETTINGS_NAMESPACES` 白名单——
-> 不在名单里的命名空间，即使插件注册了，`settings.describe` 也会把它当成
-> "not exposed"，卡片因此不渲染。要在你的 harness 检出里给模板加一行：
+### 原版 harness 上的配置卡片（不改源码）
+
+卡片是浏览器插件（`src/client.ts`），通过 `settingsScope` 服务绑定 settings 命名空间 `dsh-plugin-template`。它在任何状态下都渲染——但原版 harness 上会渲染成只读的"未暴露"状态卡，而不是可编辑表单。原因：dsh 的 Web 网关只把白名单内的 settings 命名空间暴露给设置面板（`WEB_SETTINGS_NAMESPACES`，见 `packages/host/apiproxy/src/api-proxy.ts`），不在名单里的命名空间即使插件注册了，`settings.describe` 也会回答 `settings-not-exposed`。这是 harness 侧的注册决策点（同一段源码注释把"把暴露声明移进 `settings.register()`"标注为 deferred work），不是模板缺陷：内置卡片能渲染是因为它们的命名空间（`shell`、`agent-loop`…）在白名单里，而目前不存在插件侧把它加入白名单的通道——网关的 RPC 表是编译期固定的，也没有任何注册期标志。
+
+原版 harness 上零改动即可用的部分：
+- **整个 host 半边**——`greet` 工具、事件、Service、hook 权限门，包括**配置实时读取**：写入只在 Web RPC 层被门控，插件自身每次执行都读取命名空间的解析值；
+- **卡片插槽本身**：卡片出现在 设置 → 插件 → Configurable 页并说明暴露状态，而不是静默消失。
+
+要让卡片可编辑，二选一：
+1. 在 `WEB_SETTINGS_NAMESPACES` 里加一行 `'dsh-plugin-template'`（`packages/host/apiproxy/src/api-proxy.ts`；改完需重建/重启 harness，更新检出新代码后会丢失）：
 
 ```ts
 const WEB_SETTINGS_NAMESPACES = [
@@ -121,11 +129,7 @@ const WEB_SETTINGS_NAMESPACES = [
 ] as const
 ```
 
-> 这是 harness 当前的注册决策点（源码注释原文："adding a section to that page is a
-> decision made here rather than by the registering plugin. Moving that
-> declaration to `settings.register()` … is deferred work"）。等 harness 把暴露
-> 声明移进 `settings.register()` 后，模板就不需要这一行了。该改动是本地源码修改，
-> 更新/重装 harness 检出新代码后会丢失，需要重新加。
+2. 等 harness 的 deferred work——把暴露声明移进 `settings.register()`——本模板已经按规范方式（`installSettingsSection`）注册命名空间，届时无需任何改动。
 
 ## 改成你自己的插件
 
