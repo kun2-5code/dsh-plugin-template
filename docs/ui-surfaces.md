@@ -83,6 +83,7 @@ The template deliberately does not invent its own look or layout values:
 - **Layout** comes only from the harness layout variables (`--dsh-*`, e.g. `--dsh-composer-card-max-width`, `--dsh-composer-dock-inset`, `--dsh-chat-content-width`) — no hand-picked widths.
 - **Slots are used as declared**: read the owner props and scope the contract gives you; never register into a slot the framework did not declare, and never re-type a share the framework already derives.
 - **When in doubt, mirror the closest built-in registrant** (QueueDock, GoalDock, StatsLine, …) instead of inventing a new pattern.
+- **Class names are global**: the injected `<style>` (see `src/client/styles.ts`) is one flat stylesheet in the page — it is NOT scoped per plugin. The `dtpl-*` prefix is this template's own namespace; when you fork the template into a new plugin, rename the prefix to something unique to that plugin. Two plugins sharing a class prefix silently fight over the same rules (whichever `<style>` loads later wins) — a real bug we hit when `dsh-plugin-cost-insight` reused `dtpl-card` and its `padding`/`display` leaked onto this template's card in the settings page.
 
 ## Adding a new surface to this template
 
