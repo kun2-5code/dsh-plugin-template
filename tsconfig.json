@@ -16,6 +16,7 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
   "include": ["src", "test"]

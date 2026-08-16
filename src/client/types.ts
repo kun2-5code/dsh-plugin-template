@@ -6,8 +6,6 @@
  * @module dsh-plugin-template/client/types
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-
 /** 一个 settings 命名空间在浏览器侧的同步快照（SettingsScopeSnapshot 的结构子集）。 */
 export interface SettingsSnapshot {
   status: 'loading' | 'ready' | 'unavailable'
