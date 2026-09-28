@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Plugin Template",
+    "description": "A worked example of a DeepSeek Harness plugin: a greeting tool, sample commands, an optional permission gate, and a configuration form on the Plugins page."
+  }
+}

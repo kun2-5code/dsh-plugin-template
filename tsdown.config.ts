@@ -24,7 +24,13 @@ const lib = {
 // 其余依赖一律内联（noExternal），防止 require 到模块表回答不了的 specifier。
 const CLIENT_EXTERNALS = ['react']
 
-/** Client 半边：浏览器配置卡片 bundle，输出 lib/client.js。 */
+/**
+ * Client 半边：浏览器 bundle，输出 lib/client.js。
+ *
+ * 不产 `.d.ts`：浏览器门面由 client-modules 在运行时加载，没有 TypeScript
+ * 消费者；仓库内的客户端包能出类型是因为它们另有一条 tsc 到 lib/types 的
+ * 通道，仓库外的包没有。类型检查由 `pnpm typecheck` 覆盖源码。
+ */
 const client = {
   name: 'dsh-plugin-template/client',
   entry: { client: 'src/client/index.ts' },
