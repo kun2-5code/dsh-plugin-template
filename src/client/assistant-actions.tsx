@@ -30,7 +30,7 @@ export function registerAssistantAction(ctx: Context): void {
   ))
 }
 
-/** 每条 AI 回复旁的一个开关按钮。 */
+/** 每条 AI 回复旁的一个开关按钮。pill 形态，与消息行读起来一致。 */
 export function AssistantAction(props: AssistantActionProps): React.ReactElement {
   const { t, messageId } = props
   const [saved, setSaved] = React.useState(false)
@@ -44,7 +44,6 @@ export function AssistantAction(props: AssistantActionProps): React.ReactElement
       title={saved ? t('message.saved') : t('message.save')}
       onClick={() => { setSaved(!saved) }}
     >
-      <span aria-hidden="true">{saved ? '★' : '☆'}</span>
       <span>{saved ? t('message.saved') : t('message.save')}</span>
     </button>
   )

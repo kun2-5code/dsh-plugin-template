@@ -27,14 +27,19 @@ export function registerSettingsAction(ctx: Context): void {
   ))
 }
 
-/** 设置页头部的一个开关按钮。 */
+/**
+ * 设置页头部的一个开关按钮。
+ *
+ * 几何抄 `ui-settings-general` 的输入框那一档：0.5px 描边 + `--dsw-radius-md`，
+ * 与设置页里其它可见控件读起来是一套。
+ */
 function SettingsAction(props: SettingsActionProps): React.ReactElement {
   const { t } = props
   const [armed, setArmed] = React.useState(false)
   return (
     <button
       type="button"
-      className="dtpl-btn"
+      className="dtpl-text-btn"
       aria-pressed={armed}
       onClick={() => { setArmed(!armed) }}
     >

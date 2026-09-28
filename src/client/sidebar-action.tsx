@@ -30,19 +30,24 @@ export function registerSidebarAction(ctx: Context): void {
   ))
 }
 
-/** 侧栏底部按钮：展开态显示文字，收起态只显示状态点并保留无障碍名称。 */
+/**
+ * 侧栏底部按钮。
+ *
+ * 几何抄 `ui-sidebar` 的 `.iconButton`：28px 方、`--dsw-radius-sm`、transparent
+ * 底。展开态在图标右侧补文字，收起态只剩图标——收起时按钮仍要有无障碍名称。
+ */
 export function SidebarAction(props: SidebarActionProps): React.ReactElement {
   const { t } = props
   const [lit, setLit] = React.useState(false)
   return (
     <button
       type="button"
-      className="dtpl-btn"
+      className="dtpl-icon-btn"
       aria-pressed={lit}
       aria-label={t('sidebar.label')}
       onClick={() => { setLit(!lit) }}
     >
-      <span className="dtpl-dot" aria-hidden="true">{lit ? '●' : '○'}</span>
+      <span className="dtpl-dot" data-on={lit} />
       {props.wide && <span>{t('sidebar.label')}</span>}
     </button>
   )

@@ -28,7 +28,7 @@ export function registerHeaderAction(ctx: Context): void {
   ))
 }
 
-/** 会话头右侧的一个开关按钮。 */
+/** 会话头右侧的一个开关按钮。pill 形态，与输入区那一排读起来一致。 */
 function HeaderAction(props: HeaderActionProps): React.ReactElement {
   const { t } = props
   const [lit, setLit] = React.useState(false)
@@ -39,8 +39,7 @@ function HeaderAction(props: HeaderActionProps): React.ReactElement {
       aria-pressed={lit}
       onClick={() => { setLit(!lit) }}
     >
-      <span className="dtpl-dot" aria-hidden="true">{lit ? '●' : '○'}</span>
-      <span>{t('header.label')}</span>
+      {t('header.label')}
     </button>
   )
 }

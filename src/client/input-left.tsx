@@ -39,8 +39,8 @@ function InputLeft(props: InputLeftProps): React.ReactElement {
       aria-pressed={lit}
       onClick={() => { setLit(!lit) }}
     >
-      <span className="dtpl-dot" aria-hidden="true">{lit ? '●' : '○'}</span>
-      <span>{t('input.left')}</span>
+      <span className="dtpl-dot" data-on={lit} />
+      {t('input.left')}
     </button>
   )
 }

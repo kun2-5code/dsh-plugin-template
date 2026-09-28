@@ -2,27 +2,28 @@
  * 本插件的样式表：一个 <style> 节点，全部规则在下面。
  *
  * 原则：框架的样式就是我们的样式。这里只做两件事——引用主题语义别名，以及
- * 复制主机自己的几何约定。任何控件外观都不要在这里重新发明：能少写就少写，
- * 剩下的交给主题。
+ * **照抄主机自己的几何**。凡是主机已经定过外观的控件，都不重新发明。
  *
- * 仓库内我们遵守的规则（docs/web-styling.md 与 packages/client/AGENTS.md），
- * 以及本文件对应的做法：
+ * 每条规则后面的注释写明抄自哪里。抄的来源是：
+ * - `packages/client/ui-goal/src/client/GoalBar.module.css`（输入区上方的卡片）
+ * - `packages/client/ui-chat/src/client/chat/StatsPills.module.css`（输入卡片下方居中的 pill）
+ * - `packages/client/ui-sidebar/src/client/SidebarRoot.module.css`（侧栏图标按钮）
+ * - `packages/client/ui-conversation/src/client/queue/QueueDock.module.css`（dock 列宽）
  *
- * - 颜色只用 `--dsw-alias-*` 语义别名，不复制调色板值，不写字面色值。
- * - 中性描边画 0.5px（Chromium 下一个设备像素）：用 `--dsw-alias-border-l1`。
- * - 抬升面（这里只有浮层）用 `border: 0` 加 `box-shadow: var(--dsw-elevation-panel)`，
- *   不把 `--dsw-alias-border-*` 描边和 elevation 阴影配在一起。
- * - 圆角走主题的 `--dsw-radius-*` 刻度；全圆角（胶囊、圆形）必须配
- *   `corner-shape: round`，否则超椭圆平滑会把圆拉扁。
- * - 字号与行高成对出现，取主机的排版刻度（12 / 13 / 14 / 16）。
- * - 悬停用 `--dsw-alias-interactive-bg-hover`，禁用用 `opacity: 0.45`。
- * - 不写 `outline: none`。焦点环由主题的 focus.css 提供，插件只要不覆盖它。
+ * 通用约定（docs/web-styling.md 与 packages/client/AGENTS.md）：
+ * - 颜色只用 `--dsw-alias-*`，不写字面色值。
+ * - 中性描边 0.5px（1x 屏上正好一个设备像素）。
+ * - 抬升面用 `border: 0` 加 `box-shadow: var(--dsw-elevation-panel)`。
+ * - 圆角走 `--dsw-radius-*`；全圆角必须配 `corner-shape: round`。
+ * - 字号与行高成对，取主机刻度 12 / 13 / 14 / 16。
+ * - 悬停用 `--dsw-alias-interactive-bg-hover`，禁用用 `opacity: 0.4~0.45`。
+ * - 不写 `outline: none`；焦点环由主题的 focus.css 提供。
  *
  * 为什么是一张注入的表而不是 CSS Module：仓库里的组件样式确实用 CSS Module，
  * 但那条管线（`packages/client/tsdown.client.ts` 的 clientBundle preset）不随包
- * 发布，仓库外的包要自己复现构建。插槽组件渲染在宿主给的位置上，插件拿不到一个
- * 属于自己的根节点，因此也无法用根类名把规则限定在作用域内——`dtpl-` 前缀必须
- * 全局唯一，这是它存在的唯一理由。
+ * 发布，仓库外的包要自己复现构建。插槽组件渲染在宿主给的位置上，插件拿不到属于
+ * 自己的根节点，因此也无法用根类名限定作用域——`dtpl-` 前缀必须全局唯一，这是它
+ * 存在的唯一理由。
  *
  * @module dsh-plugin-template/client/styles
  */
@@ -30,69 +31,155 @@
 import { NAMESPACE } from './constants.ts'
 
 const CSS = `
+/* ---- 通用小件 ---- */
+
+/* 侧栏/会话头的图标按钮：28px 方、sm 圆角、transparent 底，抄
+   SidebarRoot.module.css:318 的 .iconButton。rail 态由 owner 换尺寸。 */
+.dtpl-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  cursor: pointer;
+}
+.dtpl-icon-btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dtpl-icon-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* 带文字的按钮：抄 StatsPills.module.css:22 的 .pill 形态（胶囊、transparent
+   底、tertiary 文字），但给它一个常态的 secondary 文字色，因为它是可点的。 */
 .dtpl-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
+  padding: 1px 8px;
+  border: none;
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dtpl-btn:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+}
+.dtpl-btn:disabled { opacity: 0.4; cursor: default; }
+.dtpl-btn[aria-pressed='true'] { color: var(--dsw-alias-label-primary); }
+
+/* 文字按钮：设置页头部、会话头这类地方需要一个看得出来的按钮。 */
+.dtpl-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 10px;
-  border: 0.5px solid var(--dsw-alias-border-l1);
+  border: 0.5px solid var(--dsw-alias-border-l4);
   border-radius: var(--dsw-radius-md);
   background: var(--dsw-alias-bg-layer-1);
   color: var(--dsw-alias-label-primary);
+  font-family: inherit;
   font-size: 13px;
   line-height: 20px;
   cursor: pointer;
 }
-.dtpl-btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dtpl-btn:disabled { opacity: 0.45; cursor: default; }
+.dtpl-text-btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dtpl-text-btn:disabled { opacity: 0.45; cursor: default; }
 
-.dtpl-dot { font-size: 12px; line-height: 16px; }
-
-.dtpl-badge {
-  margin-left: 6px;
-  padding: 0 6px;
-  border-radius: 999px;
+/* 状态点：用 CSS 画，不拿 ●/○ 这样的字符充数。
+   字符会随字体回退变成方框，尺寸也跟不住旁边的小字；一个 6px 的圆点由令牌上色，
+   明暗主题都跟着走。全圆角配 corner-shape: round。 */
+.dtpl-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   corner-shape: round;
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
-  line-height: 16px;
+  background: var(--dsw-alias-label-tertiary);
+}
+.dtpl-dot[data-on='true'] { background: var(--dsw-alias-state-success-primary); }
+
+/* 计数/标签徽标：pill 里的数字与标签，tertiary 文字、无底色、表格数字对齐。 */
+.dtpl-badge {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
-.dtpl-row { display: flex; align-items: center; gap: 8px; }
-
-.dtpl-note, .dtpl-summary, .dtpl-prose {
-  margin: 0;
+/* ---- 输入区 dock（conversation.input.dock）----
+   抄 GoalBar.module.css 的 .dock：宽度扣掉 composer 的侧边留白与 dock 内缩，
+   再用 margin: 0 auto 居中。列宽变量由 composer 拥有者定义。 */
+.dtpl-dock {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(
+    100% -
+    var(--dsh-composer-side-clearance) -
+    var(--dsh-composer-side-clearance) -
+    var(--dsh-composer-dock-inset) -
+    var(--dsh-composer-dock-inset) -
+    var(--dsh-composer-dock-inset) -
+    var(--dsh-composer-dock-inset)
+  );
+  max-width: calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));
+  margin: 0 auto;
   color: var(--dsw-alias-label-secondary);
   font-size: 13px;
   line-height: 20px;
 }
+/* 溢出时截断并省略号，不换行——抄 GoalBar .objective 的处理。 */
+.dtpl-dock-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
+/* ---- 输入卡片下缘 dock（conversation.composer.dock）----
+   抄 StatsPills.module.css 的 .root：居中、pill 排布。 */
 .dtpl-strip {
-  margin: 0 auto;
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
-  line-height: 16px;
-  text-align: center;
-}
-
-.dtpl-dock {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--dsw-alias-label-secondary);
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
-  line-height: 16px;
+  line-height: 20px;
 }
-.dtpl-dock-id { color: var(--dsw-alias-label-tertiary); }
+.dtpl-strip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
+/* ---- 帧级浮层（shell.overlay）----
+   抬升面：border: 0 + elevation-panel，抄 GoalBar .bar 的做法。 */
 .dtpl-overlay {
   position: fixed;
   right: 16px;
   bottom: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  box-sizing: border-box;
   max-width: min(320px, calc(100vw - 32px));
   padding: 10px 12px;
   border: 0;
@@ -103,25 +190,76 @@ const CSS = `
   line-height: 20px;
   box-shadow: var(--dsw-elevation-panel);
 }
+.dtpl-overlay-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .dtpl-overlay-close {
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--dsw-alias-label-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
   font-size: 16px;
   line-height: 20px;
   cursor: pointer;
 }
+.dtpl-overlay-close:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+}
 
+/* ---- 命令行（conversation.chat.commandview）---- */
 .dtpl-command {
   display: flex;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
   font-size: 13px;
   line-height: 20px;
 }
-.dtpl-command-status { color: var(--dsw-alias-label-secondary); }
+.dtpl-command-line {
+  flex: none;
+  font-family: var(--ds-font-family-code);
+}
+.dtpl-command-status {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .dtpl-command-failed { color: var(--dsw-alias-state-error-primary); }
 
+/* ---- 设置页与通用设置行 ---- */
+.dtpl-note, .dtpl-summary, .dtpl-prose {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.dtpl-prose > p { margin: 0 0 8px; }
+.dtpl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* ---- 配置表单 ----
+   输入框抄 GoalBar .objectiveInput：0.5px border-l4 + radius-sm。 */
 .dtpl-form {
   display: flex;
   flex-direction: column;
@@ -132,29 +270,34 @@ const CSS = `
 }
 .dtpl-form-title {
   margin: 0;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 14px;
+  line-height: 22px;
   font-weight: 500;
 }
 .dtpl-field { display: flex; flex-direction: column; gap: 4px; }
 .dtpl-field-inline { flex-direction: row; align-items: flex-start; gap: 8px; }
 .dtpl-field-label { display: flex; align-items: center; gap: 6px; }
 .dtpl-field-hint {
-  color: var(--dsw-alias-label-secondary);
+  color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 16px;
 }
 .dtpl-field input[type='text'],
 .dtpl-field input[type='number'] {
-  padding: 6px 8px;
-  border: 0.5px solid var(--dsw-alias-border-l1);
+  box-sizing: border-box;
+  height: 26px;
+  padding: 0 8px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
   border-radius: var(--dsw-radius-sm);
-  background: var(--dsw-alias-bg-layer-1);
+  background: var(--dsw-alias-bg-base);
   color: var(--dsw-alias-label-primary);
+  font-family: inherit;
   font-size: 13px;
   line-height: 20px;
 }
+.dtpl-field input:focus { border-color: var(--dsw-alias-state-business-primary); }
 .dtpl-field input:disabled { opacity: 0.45; }
+.dtpl-field input::placeholder { color: var(--dsw-alias-label-caption); }
 .dtpl-invalid { color: var(--dsw-alias-state-error-primary); font-size: 12px; line-height: 16px; }
 .dtpl-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
 `

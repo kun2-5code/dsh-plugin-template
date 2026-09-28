@@ -19,11 +19,14 @@ export const VERIFIED_THEME_VERSION = '0.1.7-rc.2'
 /** 本模版允许引用的主题令牌。 */
 export const VERIFIED_TOKENS: ReadonlySet<string> = new Set([
   // 背景层
+  '--dsw-alias-bg-base',
   '--dsw-alias-bg-layer-1',
   '--dsw-alias-bg-layer-2',
   // 描边
   '--dsw-alias-border-l1',
+  '--dsw-alias-border-l4',
   // 文字
+  '--dsw-alias-label-caption',
   '--dsw-alias-label-primary',
   '--dsw-alias-label-secondary',
   '--dsw-alias-label-tertiary',
@@ -31,6 +34,7 @@ export const VERIFIED_TOKENS: ReadonlySet<string> = new Set([
   '--dsw-alias-interactive-bg-hover',
   // 状态色
   '--dsw-alias-state-error-primary',
+  '--dsw-alias-state-success-primary',
   '--dsw-alias-state-business-primary',
   // 圆角刻度
   '--dsw-radius-sm',

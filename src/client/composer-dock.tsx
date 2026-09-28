@@ -29,7 +29,11 @@ export function registerComposerDock(ctx: Context): void {
   ))
 }
 
-/** 输入卡片下方居中的一条状态文字。 */
+/** 输入卡片下方居中的一条状态文字。几何抄 StatsPills 的 .root。 */
 function ComposerDock(props: ComposerDockProps): React.ReactElement {
-  return <div className="dtpl-strip">{props.t('composerDock.text')}</div>
+  return (
+    <div className="dtpl-strip">
+      <span className="dtpl-strip-label">{props.t('composerDock.text')}</span>
+    </div>
+  )
 }

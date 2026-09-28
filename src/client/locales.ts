@@ -19,7 +19,7 @@ export type TemplateLocaleKey =
   // 侧栏
   | 'sidebar.label'
   // 输入区
-  | 'inputDock.label' | 'inputDock.waiting'
+  | 'inputDock.label' | 'inputDock.waiting' | 'inputDock.detail'
   | 'input.left' | 'input.right'
   // 浮层
   | 'overlay.text' | 'overlay.close'
@@ -56,6 +56,7 @@ export const en: Record<TemplateLocaleKey, string> = {
   'sidebar.label': 'Template',
   'inputDock.label': 'Input dock',
   'inputDock.waiting': 'No session',
+  'inputDock.detail': 'This strip sits above the composer card.',
   'input.left': 'Left',
   'input.right': 'Right',
   'overlay.text': 'Overlay example',
@@ -97,6 +98,7 @@ export const zh: Record<TemplateLocaleKey, string> = {
   'sidebar.label': '模版',
   'inputDock.label': '输入区 Dock',
   'inputDock.waiting': '无会话',
+  'inputDock.detail': '这条状态行显示在输入卡片上方。',
   'input.left': '左',
   'input.right': '右',
   'overlay.text': '浮层示例',
