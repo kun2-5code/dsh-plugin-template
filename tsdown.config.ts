@@ -22,7 +22,9 @@ const lib = {
 // （工厂通过注入的 require 从浏览器模块表解析 externals）。
 // externals 只允许浏览器平台模块表里有的包；react 是唯一运行时外部依赖，
 // 其余依赖一律内联（noExternal），防止 require 到模块表回答不了的 specifier。
-const CLIENT_EXTERNALS = ['react']
+// 基线平台模块由浏览器模块表提供，动态 bundle 直接 external，不要内联出第二份。
+// react/jsx-runtime 由 jsx: react-jsx 自动引入，一并列出。
+const CLIENT_EXTERNALS = ['react', 'react/jsx-runtime']
 
 /**
  * Client 半边：浏览器 bundle，输出 lib/client.js。

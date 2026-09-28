@@ -9,6 +9,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
 import { apply, inject } from '../src/client/index.ts'
+import { TestConfigForms } from './support/config-forms.ts'
 import { DEMO_COMMAND_NAME, LOCALE_NAMESPACE, NAMESPACE } from '../src/client/constants.ts'
 import { isTestLocale, TestLocale } from './support/locale.ts'
 import { requireDouble } from './support/require-double.ts'
@@ -41,6 +42,7 @@ async function bench() {
   // cordis 的 ctx.plugin(...) 只挂载第一个参数，服务要各自挂一次。
   await ctx.plugin(TestSlotRegistry).await()
   await ctx.plugin(TestLocale).await()
+  await ctx.plugin(TestConfigForms).await()
   const slots = requireDouble(ctx.get('slots'), isTestSlotRegistry, 'slot test double')
   const locale = requireDouble(ctx.get('locale'), isTestLocale, 'locale test double')
   // 外壳在 root 的 children 表里声明这些槽位。
@@ -121,6 +123,7 @@ describe('browser half registration', () => {
     const ctx = new Context()
     await ctx.plugin(TestSlotRegistry).await()
     await ctx.plugin(TestLocale).await()
+    await ctx.plugin(TestConfigForms).await()
     const slots = requireDouble(ctx.get('slots'), isTestSlotRegistry, 'slot test double')
     // 只声明部分槽位：未声明的那些贡献应当等着，不应让插件启动失败。
     slots.declare('shell.overlay')

@@ -41,7 +41,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** 依赖的服务：slots 与 locale 就绪后本插件才会加载。 */
-export const inject = ['slots', 'locale']
+export const inject = ['slots', 'locale', 'configForms']
 
 /**
  * 挂载本插件的浏览器半边。
