@@ -38,6 +38,7 @@ export const VERIFIED_TOKENS: ReadonlySet<string> = new Set([
   '--dsw-alias-state-business-primary',
   // 圆角刻度
   '--dsw-radius-sm',
+  '--dsw-radius-xs',
   '--dsw-radius-md',
   '--dsw-radius-lg',
   // 抬升

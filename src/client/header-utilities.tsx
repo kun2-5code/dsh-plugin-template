@@ -41,7 +41,12 @@ export function registerHeaderUtility(ctx: Context): void {
   ))
 }
 
-/** 会话头右侧的一枚徽标。 */
+/**
+ * 会话头右侧的一枚被动标签。
+ *
+ * 几何抄 `ui-agent-preset` 的 `AgentPresetLabel .label`：22px 高、4px 圆角、
+ * 12/22 三级文字、最宽 180px，标题行窄于 540px 时整枚隐藏——passive chrome 先让位。
+ */
 function HeaderUtility(props: HeaderUtilityProps): React.ReactElement {
-  return <span className="dtpl-badge">{props.t('header.badge')}</span>
+  return <span className="dtpl-tag">{props.t('header.badge')}</span>
 }

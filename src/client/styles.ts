@@ -33,26 +33,67 @@ import { NAMESPACE } from './constants.ts'
 const CSS = `
 /* ---- 通用小件 ---- */
 
-/* 侧栏/会话头的图标按钮：28px 方、sm 圆角、transparent 底，抄
-   SidebarRoot.module.css:318 的 .iconButton。rail 态由 owner 换尺寸。 */
-.dtpl-icon-btn {
-  display: inline-flex;
+/* 侧栏底部行：抄 ui-settings-general 的 .trigger。
+   展开态是 42px 高的整宽行（flex:1 + 0 10px 0 8px 内边距 + 14px 文字），
+   收起态换成 36x36 居中的方钮，和侧栏里其它 rail 控件同尺寸。 */
+.dtpl-foot {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 28px;
-  height: 28px;
-  padding: 0;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 0 10px 0 8px;
   border: none;
-  border-radius: var(--dsw-radius-sm);
+  border-radius: var(--dsw-radius-md);
   background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
-  line-height: 16px;
+  color: var(--dsw-alias-label-primary);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  text-align: left;
   cursor: pointer;
 }
-.dtpl-icon-btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dtpl-icon-btn:disabled { opacity: 0.4; cursor: default; }
+.dtpl-foot:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dtpl-foot:disabled { opacity: 0.4; cursor: default; }
+.dtpl-foot-rail {
+  flex: none;
+  justify-content: center;
+  gap: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+.dtpl-foot-label {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* 会话头的被动标签：抄 ui-agent-preset 的 AgentPresetLabel .label。
+   22px 高、4px 圆角、12/22 三级文字，标题行变窄时先让这枚 passive chrome 让位。
+   注意宿主那条 background 引用了未声明的 --dsw-alias-fill-tsp-secondary，计算后是透明；
+   这里用已声明的浅层背景，落成它本来想要的样子。 */
+.dtpl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  max-width: 180px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--dsw-radius-xs);
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@container (max-width: 540px) {
+  .dtpl-tag { display: none; }
+}
 
 /* 带文字的按钮：抄 StatsPills.module.css:22 的 .pill 形态（胶囊、transparent
    底、tertiary 文字），但给它一个常态的 secondary 文字色，因为它是可点的。 */
@@ -121,11 +162,14 @@ const CSS = `
 
 /* ---- 输入区 dock（conversation.input.dock）----
    抄 GoalBar.module.css 的 .dock：宽度扣掉 composer 的侧边留白与 dock 内缩，
-   再用 margin: 0 auto 居中。列宽变量由 composer 拥有者定义。 */
+   再用 margin: 0 auto 居中。GoalBar 的 .bar 是一张撑满的卡片、内容左对齐；这里
+   是一排状态而不是卡片，所以内容也要居中——只居中盒子不居中内容，pill 一样会贴在
+   左边。 */
 .dtpl-dock {
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   width: calc(
     100% -

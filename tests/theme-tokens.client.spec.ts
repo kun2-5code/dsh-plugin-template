@@ -151,18 +151,18 @@ describe('class coverage', () => {
   }
 
   /**
-   * 组件源码里出现的类名。模板字面量的动态后缀（`dtpl-command-${state}`）只留下
-   * 前缀，交由调用方判断是否有规则以它开头。
+   * 组件源码里出现的类名。`className` 既可能是字符串字面量、模板字面量，也可能是
+   * 三元或 `clsx(...)` 表达式，所以整段属性值都扫。模板字面量的动态后缀
+   * （`dtpl-command-${state}`）只留下前缀，交由调用方判断是否有规则以它开头。
    */
   function used(): string[] {
     const found = new Set<string>()
     for (const file of readdirSync(CLIENT_DIR)) {
       if (!file.endsWith('.tsx')) continue
       const source = readFileSync(join(CLIENT_DIR, file), 'utf8')
-      for (const match of source.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
-        for (const raw of `${match[1] ?? ''} ${match[2] ?? ''}`.split(/\s+/)) {
-          const name = raw.replace(/\$\{.*$/u, '')
-          if (name.startsWith('dtpl-')) found.add(name)
+      for (const match of source.matchAll(/className=(?:"([^"]*)"|\{([\s\S]*?)\})/g)) {
+        for (const token of `${match[1] ?? ''} ${match[2] ?? ''}`.matchAll(/dtpl-[a-z0-9-${}]+/g)) {
+          found.add((token[0] ?? '').replace(/\$\{.*$/u, ''))
         }
       }
     }
