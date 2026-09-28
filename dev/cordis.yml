@@ -2,15 +2,20 @@
 #
 #   pnpm dsh web --patch /absolute/path/to/dsh-plugin-template/dev/cordis.yml
 #
-# 插件路径必须为绝对路径（overlay 不改变 profile 的模块解析目录）。
-# 把下面的 name 改成这个仓库在你机器上的绝对路径。
+# 插件路径必须为绝对路径（overlay 不改变 profile 的模块解析目录），而且必须写成
+# `file://` URL，不能是裸路径。Loader 把条目的 name 直接交给 import()，Windows 上
+# `D:\...` 会被当成协议 `d:`，整个条目以 ERR_UNSUPPORTED_ESM_URL_SCHEME 失败，插件
+# 静默不加载。macOS/Linux 的裸路径恰好能被 import() 接受，所以这个坑只在 Windows 上
+# 出现；URL 形式在三个平台上都成立。
+#
+# 取 URL 形式：node -e "console.log(require('node:url').pathToFileURL('<绝对路径>').href)"
 #
 # 注意：overlay 只加载 host 半边（模块解析到源码文件，发现不了 dsh.client 包级声明）。
 # 要测试浏览器半边的配置卡片（src/client/），必须把包安装进 profile：
 #   pnpm dsh plugin --profile web add /absolute/path/to/dsh-plugin-template && pnpm dsh web
 - insert:
     - id: dsh-plugin-template
-      name: '/absolute/path/to/dsh-plugin-template/src/index.ts'
+      name: 'file:///absolute/path/to/dsh-plugin-template/src/index.ts'
       config:
         greeting: 'Hello from dev overlay'
         verbose: true

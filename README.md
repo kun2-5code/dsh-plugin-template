@@ -104,7 +104,7 @@ From the root of a [deepseek-harness](https://github.com/deepseek-ai/deepseek-ha
 pnpm dsh web --patch /absolute/path/to/dsh-plugin-template/dev/cordis.yml
 ```
 
-Set `name` in `dev/cordis.yml` to this repo's absolute path on your machine, open `http://127.0.0.1:3080`, and ask the model to call the `greet` tool.
+Set `name` in `dev/cordis.yml` to this repo's path on your machine as a **`file://` URL**, open `http://127.0.0.1:3080`, and ask the model to call the `greet` tool. A bare absolute path fails on Windows: the Loader hands an entry's `name` straight to `import()`, and `D:\…` parses as protocol `d:`, so the row dies with `ERR_UNSUPPORTED_ESM_URL_SCHEME` and the plugin never loads. Produce the URL with `node -e "console.log(require('node:url').pathToFileURL('<path>').href)"`.
 
 > A `--patch` overlay only loads the plugin's **host half** (module resolution cannot reach package-level declarations).
 > To test the browser half you must install into a profile (resolved by `name: dsh-plugin-template`) — see the next section.

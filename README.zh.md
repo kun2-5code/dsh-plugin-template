@@ -104,7 +104,7 @@ dsh --profile demo
 pnpm dsh web --patch /absolute/path/to/dsh-plugin-template/dev/cordis.yml
 ```
 
-把 `dev/cordis.yml` 里的 `name` 改成本机上的绝对路径，打开 `http://127.0.0.1:3080`，让模型调用 `greet` 工具。
+把 `dev/cordis.yml` 里的 `name` 改成本机上的路径，写成 **`file://` URL**，打开 `http://127.0.0.1:3080`，让模型调用 `greet` 工具。裸绝对路径在 Windows 上会失败：Loader 把条目的 `name` 直接交给 `import()`，`D:\…` 会被解析成协议 `d:`，该条目以 `ERR_UNSUPPORTED_ESM_URL_SCHEME` 失败，插件根本不会加载。取 URL 形式：`node -e "console.log(require('node:url').pathToFileURL('<路径>').href)"`。
 
 > `--patch` overlay 只加载插件的**宿主半边**（模块解析够不到包级声明）。
 > 要测浏览器半边必须装进 profile（由 `name: dsh-plugin-template` 解析）——见下一节。
