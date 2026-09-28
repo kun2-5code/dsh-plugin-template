@@ -48,6 +48,7 @@
 
 - **不在运行时 import 包。** `react` 来自浏览器平台模块表。harness 客户端包只以 `import type {} from '.../client'` 出现，会被擦除且不产生模块请求。禁止 import 别的功能插件的值；行为通过服务共享，UI 通过插槽共享。
 - **文案归 locale 所有。** 每条用户可见文字都放在 `src/client/locales.ts`，通过注册项 `locale` 选项提供的 `t` 席位到达组件。list 标签用 thunk（`label: () => t('key')`），切换语言不需要重新注册。
-- **样式用主题令牌。** 颜色取自 `--dsw-alias-*`，不写字面色值。`font-weight` 不超过 500。`dtpl-` 类前缀必须保持本包独有——共用前缀会让两个插件的规则互相串味。
+- **样式跟随主机。** 框架的样式就是插件的样式。`src/client/styles.ts` 引用 `--dsw-alias-*` 语义别名并照抄主机自己的几何约定，不会给主机已经定过外观的控件再定一套。遵守的规则来自 [docs/web-styling.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/web-styling.md)：中性描边画 0.5px；抬升面用 `border: 0` 加 `box-shadow: var(--dsw-elevation-panel)`，不把描边令牌和阴影配在一起；圆角取 `--dsw-radius-*` 刻度，每个全圆角都配 `corner-shape: round`；字号取主机的 12/13/14/16 刻度且始终与行高成对；悬停用 `--dsw-alias-interactive-bg-hover`，禁用用 `opacity: 0.45`；主题的焦点环绝不覆盖。`dtpl-` 类前缀必须保持本包独有——共用前缀会让两个插件的规则互相串味。
+- **令牌是签入的快照。** `tests/support/theme-tokens.ts` 列出本包允许引用的令牌，以及核对时对应的主题版本；`tests/theme-tokens.client.spec.ts` 强制这份清单，并在安装的主题版本变动时报错。主题的令牌表没有随包发布，仓库外的包无法在测试时读到。这个守卫不是摆设：本包第一版样式表引用了并不存在的 `--dsw-alias-shadow-popup`，浮层的阴影因此静默失效。
 - **effect 要回收。** 样式表在 `ctx.effect` 里注册，并返回移除节点的清理函数，所以重新加载插件不会累积样式表。客户端半边没有定时器或全局监听；宿主半边 `src/index.ts` 里的心跳出于同样原因包在 `ctx.effect` 中。
 - **工厂体无副作用。** `lib/client.js` 只注册一个惰性工厂，实际工作在 `apply` 里。
