@@ -10,7 +10,7 @@
  * 就报错，提醒重新核对令牌表，而不是让样式悄悄跑偏。
  */
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { injectStyles } from '../src/client/styles.ts'
@@ -136,5 +136,51 @@ describe('focus', () => {
   it('does not suppress the theme focus ring', () => {
     expect(css(), 'the theme provides the focus ring; a plugin must not remove it')
       .not.toMatch(/outline:\s*(none|0)\b/)
+  })
+})
+
+describe('class coverage', () => {
+  // 插件拿不到属于自己的根元素（插槽组件渲染在宿主给的位置上），所以样式表只能
+  // 靠 `dtpl-` 前缀做全局作用域。代价是拼错类名不会报错，只会静默失效——这组
+  // 断言把那份静默变成失败。
+  const CLIENT_DIR = join(import.meta.dirname, '..', 'src', 'client')
+
+  /** 样式表里定义的全部 `.dtpl-*` 选择器。 */
+  function defined(): string[] {
+    return [...css().matchAll(/\.(dtpl-[a-z0-9-]+)/g)].map(m => m[1] ?? '')
+  }
+
+  /**
+   * 组件源码里出现的类名。模板字面量的动态后缀（`dtpl-command-${state}`）只留下
+   * 前缀，交由调用方判断是否有规则以它开头。
+   */
+  function used(): string[] {
+    const found = new Set<string>()
+    for (const file of readdirSync(CLIENT_DIR)) {
+      if (!file.endsWith('.tsx')) continue
+      const source = readFileSync(join(CLIENT_DIR, file), 'utf8')
+      for (const match of source.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+        for (const raw of `${match[1] ?? ''} ${match[2] ?? ''}`.split(/\s+/)) {
+          const name = raw.replace(/\$\{.*$/u, '')
+          if (name.startsWith('dtpl-')) found.add(name)
+        }
+      }
+    }
+    return [...found]
+  }
+
+  it('defines a rule for every class a component applies', () => {
+    const definedClasses = defined()
+    const unresolved = used().filter(name => !definedClasses.includes(name)
+      && !definedClasses.some(candidate => candidate.startsWith(name)))
+    expect(unresolved, `classes applied but never styled: ${unresolved.join(', ')}`).toEqual([])
+  })
+
+  it('styles nothing a component never applies', () => {
+    const applied = used()
+    const dead = defined().filter(name => !applied.some(usedName => usedName === name
+      || usedName.startsWith(`${name}-`)
+      || name.startsWith(`${usedName}-`)))
+    expect(dead, `rules no component applies: ${dead.join(', ')}`).toEqual([])
   })
 })

@@ -51,7 +51,10 @@ export function ShellOverlayDemo(props: ShellOverlayProps): React.ReactElement |
       aria-label={t('overlay.text')}
       onClick={() => { setDismissed(true) }}
     >
-      <span onClick={(event) => { event.stopPropagation() }}>{t('overlay.text')}</span>
+      <span
+        className="dtpl-overlay-text"
+        onClick={(event) => { event.stopPropagation() }}
+      >{t('overlay.text')}</span>
       <button
         type="button"
         className="dtpl-overlay-close"
