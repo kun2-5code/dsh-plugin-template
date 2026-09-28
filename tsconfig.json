@@ -20,5 +20,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "tests", "vitest.config.ts"]
 }
