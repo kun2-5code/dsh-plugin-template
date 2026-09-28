@@ -1,18 +1,24 @@
-// 构建产物冒烟测试：验证主插件注册 greet 工具、配置经 settings 命名空间实时接线、
-// hook 权限门按配置拒绝/放行。
-// 运行：node test/smoke.mjs（先 pnpm build）
+// 构建产物上的冒烟测试：验证 greet 工具已注册、按当前配置取词、
+// 自定义事件已监听、/hello 与 /dsh-demo 两条命令已注册，以及 hook 权限
+// 拦截器会拒绝禁用工具。
+//
+// 运行方式：先 `pnpm build`，再 `node test/smoke.mjs`。
+//
+// 覆盖的是构建产物，不是源码；浏览器半边（lib/client.js）需要真实 DOM 与
+// 插槽宿主，不在这里测。
 import assert from 'node:assert/strict'
-import { name, inject, apply } from '../lib/index.js'
+import { apply, inject, name } from '../lib/index.js'
 import * as hook from '../lib/hook.js'
 
-// 最小可用的 ctx：只实现本插件用到的成员。
-// inject 存在但从不提供服务 —— 模拟"profile 里没有 settings 服务"，
-// 此时 installSettingsSection 不执行，配置回退到 composition entry。
+// 只实现被用到成员的最小 ctx。`tools` 由 inject 提供；`commands` 是可选服务，
+// 这里显式提供以便断言命令注册。
 const registered = []
+const registeredCommands = []
 const ctx = {
   tools: {
     register(definition) {
       registered.push(definition)
+      return () => {}
     },
   },
   on() {
@@ -21,76 +27,40 @@ const ctx = {
   effect() {
     return () => {}
   },
-  inject() {
+  inject(names, callback) {
+    if (names.includes('commands')) {
+      callback({ commands: { register(definition) { registeredCommands.push(definition) } } })
+    }
     return () => {}
   },
 }
 
-const config = { greeting: 'Hi', maxRetries: 5 }
+// 配置值以 Volatile 引用的形式出现：{ get(): value }
+const config = {
+  greeting: { get: () => 'Hi' },
+  maxRetries: { get: () => 5 },
+  verbose: { get: () => false },
+}
 apply(ctx, config)
 
 assert.equal(name, 'dsh-plugin-template')
 assert.deepEqual(inject, ['tools'])
 
-const tool = registered.find((t) => t.name === 'greet')
+const tool = registered.find(t => t.name === 'greet')
 assert.ok(tool, 'greet tool should be registered')
 assert.equal(await tool.execute({ name: 'Ada' }), 'Hi, Ada!')
 assert.equal(typeof tool.presentResult, 'function', 'greet tool should define presentResult')
 
-// settings 接线：模拟 settings 服务存在（installSettingsSection 的依赖立即满足），
-// 断言 greet 工具实时读取命名空间的解析值，而不是静态配置。
-{
-  let liveValue = { greeting: 'Hey', maxRetries: 3 }
-  const settingsCtx = {
-    settings: {
-      register(ns, schema, options) {
-        assert.equal(ns, 'dsh-plugin-template')
-        assert.equal(options.base, config, 'composition entry 应作为 base 层传入')
-        return {
-          get() {
-            return liveValue
-          },
-          watch() {
-            return () => {}
-          },
-        }
-      },
-    },
-    effect() {
-      return () => {}
-    },
-  }
-  const liveRegistered = []
-  const registeredCommands = []
-  const liveCtx = {
-    tools: { register(d) { liveRegistered.push(d) } },
-    on() { return () => {} },
-    effect() { return () => {} },
-    // 按注入名分发：installSettingsSection 注入 ['settings']，registerDemoCommand 注入 ['commands']。
-    inject(names, callback) {
-      if (names.includes('settings')) callback(settingsCtx)
-      if (names.includes('commands')) callback({ commands: { register(d) { registeredCommands.push(d) } } })
-      return () => {}
-    },
-  }
-  apply(liveCtx, config)
-  const liveTool = liveRegistered.find((t) => t.name === 'greet')
-  assert.ok(liveTool, 'greet tool should be registered')
-  assert.equal(await liveTool.execute({ name: 'Bob' }), 'Hey, Bob!')
-  liveValue = { greeting: 'Yo', maxRetries: 1 }
-  assert.equal(await liveTool.execute({ name: 'Bob' }), 'Yo, Bob!', '配置变更应实时生效')
-  assert.ok(registeredCommands.some((c) => c.name === 'dsh-demo'), 'demo command should be registered')
-  assert.ok(registeredCommands.some((c) => c.name === 'hello'), 'hello command should be registered')
-}
+// 配置改为实时取值后，同一个工具实例应读到新值，不需要重新注册。
+config.greeting = { get: () => 'Hey' }
+assert.equal(await tool.execute({ name: 'Bob' }), 'Hey, Bob!')
 
-// hook 权限门：捕获注册的 tools/pre-execute 监听器，验证拒绝与放行两条路径。
+assert.ok(registeredCommands.some(c => c.name === 'hello'), 'hello command should be registered')
+assert.ok(registeredCommands.some(c => c.name === 'dsh-demo'), 'demo command should be registered')
+
+// hook 权限拦截器：拒绝禁用工具，放行其它工具。
 let listener
-const hookCtx = {
-  on(_event, fn) {
-    listener = fn
-  },
-}
-hook.apply(hookCtx, { denyTools: ['bash'] })
+hook.apply({ on(_event, fn) { listener = fn } }, { denyTools: ['bash'] })
 assert.ok(listener, 'tools/pre-execute listener should be registered')
 
 const denied = await listener({ name: 'bash' }, () => Promise.resolve({ kind: 'allow' }))

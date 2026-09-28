@@ -1,82 +1,86 @@
 /**
- * dsh-plugin-template 主插件：一个可直接运行的示例，演示 dsh 插件最常用的四种形态——
- * 配置（Config + Schemastery 校验）、工具注册（defineTool）、事件监听（ctx.on）、
- * 显式资源清理（ctx.effect），外加"配置可在 GUI 设置里点击修改"：
- * 配置通过 settings 命名空间（ctx.settings）接线，浏览器半边的配置卡片
- * （见 src/client/）写入用户设置文档，本插件实时读取。
- * 注意：Web 设置面板的可见性受 harness 的 WEB_SETTINGS_NAMESPACES 白名单限制，
- * 只影响卡片的可编辑性，不影响本插件实时读取配置（详见 README）。
+ * dsh-plugin-template 的宿主半边：声明 Config 字段、注册工具、监听事件。
  *
- * 加载契约：模块具名导出 apply(ctx, config)；框架在依赖（inject）就绪后调用 apply，
- * 卸载时自动回收所有通过 ctx 注册的监听器与 effect，无需手动移除。
+ * 配置约定（2026-09 起）：插件不再注册 settings 命名空间。Loader 会为每个
+ * Config 里带 `.volatile()` 字段的 entry 自动派生命名空间，命名空间 id 就是
+ * `cordis.patch.yml` 里那一行的 `id`。因此这里不需要依赖 @deepseek-ai/dsh-settings，
+ * 只需在 schema 上标 `.volatile()`，并在读取处调用 `.get()`。
+ *
+ * 读取时机：每次执行操作时读一次 `.get()`，拿到的是当前生效的值；需要一致
+ * 快照的操作在开始时把值取出来传递下去，不要缓存 configSource()。
+ *
+ * 浏览器半边在 src/client/，注册 14 个 UI 面（含 Plugins 页上的配置表单）。
+ * 命名空间会在宿主侧被服务时自动暴露，无需白名单。
+ *
  * @module dsh-plugin-template
  */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { registerDemoCommand, registerHelloCommand } from './commands.ts'
 
-/** 插件显示名（诊断日志中使用）。 */
+/** 宿主插件名，须与 package.json 的 name 及 cordis.patch.yml 的 id 一致。 */
 export const name = 'dsh-plugin-template'
 
 /** 依赖的服务：tools 就绪后本插件才会加载。 */
 export const inject = ['tools']
 
-/** 插件配置：部署时通过 cordis.yml 覆盖，也可以在 GUI 设置里改。 */
+/**
+ * 插件配置。每个字段都是 Volatile 引用，因此可以在不重启宿主的情况下被
+ * 用户改写；`.get()` 返回当前生效的值。
+ */
 export interface Config {
-  /** 打招呼的前缀文案。 */
-  greeting: string
-  /** 示例重试次数。 */
-  maxRetries: number
-  /** 是否打印调试日志。 */
-  verbose?: boolean
+  /** 打招呼时使用的前缀文案。 */
+  greeting: Volatile<string>
+  /** 示例：单次操作允许的最大重试次数。 */
+  maxRetries: Volatile<number>
+  /** 是否输出示例调试日志。 */
+  verbose: Volatile<boolean>
 }
 
-/** Schemastery 配置 schema：负责校验与默认值，配置非法时加载响亮失败。 */
-export const Config: Schema<Config> = Schema.object({
-  greeting: Schema.string().default('Hello'),
-  maxRetries: Schema.number().default(3),
-  verbose: Schema.boolean().default(false),
+/**
+ * Schemastery schema：默认值写在这里，cordis.yml 与 GUI 改写都会经过它校验。
+ * 不写 `Schema<Config>` 注解——`.volatile()` 的输出类型是解包后的值，而
+ * `Config` 接口描述的是带引用的形状，两者不能互相赋值。
+ */
+export const Config = Schema.object({
+  greeting: Schema.string().default('Hello').volatile(),
+  maxRetries: Schema.number().default(3).volatile(),
+  verbose: Schema.boolean().default(false).volatile(),
 })
 
 /**
- * 类型化事件声明（declaration merging）：声明后 ctx.on / ctx.emit 自动获得类型推导。
- * 事件名遵循 namespace/action 约定。
+ * 插件事件：经 declaration merging 加入 cordis 的 Events 表，
+ * `ctx.on` / `ctx.emit` 随之获得类型。键名用 `<插件名>/<动作>` 的约定。
  */
 declare module '@deepseek-ai/cordis' {
   interface Events {
+    /**
+     * 插件完成初始化时发出。
+     * @param payload - 初始化完成的消息
+     * @param payload.id - 发出事件的插件名
+     * @mode emit
+     */
     'my-plugin/ready': (payload: { id: string }) => void
   }
 }
 
 /**
- * 插件主体：所有注册都是 effect，随插件卸载自动回收。
+ * 插件主体：注册命令与工具，并挂一个随生命周期自动回收的定时器。
  *
- * 配置来源：settings 服务存在时，把它注册为命名空间 `dsh-plugin-template`
- * （cordis.yml 里的配置作为 composition base 层），GUI 配置卡片写入的用户层
- * 会覆盖 base；settings 服务不存在时回退到 cordis.yml 配置，行为与原来完全一致。
- * 工具的 execute 与定时器都通过 configSource() 惰性读取，因此用户在 GUI 里改完
- * 配置立即生效，无需重启。
+ * 所有注册都走 ctx.effect / ctx.on，插件停用时自动撤销，不需要手动 disposer。
+ * @param ctx - 宿主插件上下文。
+ * @param config - 经过校验的配置，各字段是 Volatile 引用。
  */
 export function apply(ctx: Context, config: Config): void {
-  let configSource: () => Config = () => config
-  installSettingsSection(ctx, settingsNamespace('dsh-plugin-template'), Config, config, {
-    // 收到当前权威配置源（有 settings 时是命名空间的解析值，否则是 composition entry）。
-    setSource: (current) => {
-      configSource = current
-    },
-    // 本示例所有字段都在使用点读取，无需为配置变更重建任何注册。
-    onChange: () => {},
-  })
-
-  // 0) 示例斜杠命令：/hello 回复 world（默认渲染行）、/dsh-demo 回显输入
-  //    （配合浏览器半边的 commandview 自定义渲染行做端到端演示）。
+  // 0) 示例命令。/hello 由宿主侧直接渲染成普通消息；
+  //    /dsh-demo 有自定义行，由客户端半边的 src/client/commandview.tsx 渲染。
   registerHelloCommand(ctx)
   registerDemoCommand(ctx)
 
-  // 1) 注册一个模型可调用的工具。output.render 是纯函数，把规范输出转成模型可见内容。
+  // 1) 注册一个模型可调用的工具。output.render 是纯函数，负责模型可见的渲染；
+  //    presentResult 是给 UI 的渲染意图，两者是不同的关注点。
   ctx.tools.register(defineTool({
     name: 'greet',
     description: 'Greet someone by name.',
@@ -87,28 +91,31 @@ export function apply(ctx: Context, config: Config): void {
       schema: { type: 'string' },
       render: (_args, value) => [{ type: 'text', text: value }],
     },
-    // 结果渲染意图（纯函数，可重放）：把模型可见的结果文本再美化一版给 UI
-    // 展示。省略则用通用卡片渲染原始结果内容。
     presentResult: (_args, result) => ({
       card: 'generic',
       title: 'greet',
-      content: [{ type: 'text', text: `👋 ${result.content.map((block) => block.type === 'text' ? block.text : '').join('')}` }],
+      content: [{
+        type: 'text',
+        text: result.content.map((block) => block.type === 'text' ? block.text : '').join(''),
+      }],
     }),
     async execute(args) {
-      const { greeting } = configSource()
-      return `${greeting}, ${args.name}!`
+      // 在执行点读取当前生效值，用户改配置后下一次调用即可见。
+      return `${config.greeting.get()}, ${args.name}!`
     },
   }))
 
-  // 2) 事件监听：同样是 effect，插件卸载时自动移除。
+  // 2) 事件监听同样是 effect，插件停用时自动撤销。
   ctx.on('my-plugin/ready', ({ id }) => {
-    if (configSource().verbose) console.log(`[${name}] ${id} is ready`)
+    if (config.verbose.get()) console.log(`[${name}] ${id} is ready`)
   })
 
-  // 3) 需要显式清理的资源（网络连接、定时器等）用 ctx.effect 提供 disposer。
+  // 3) 需要真实资源时用 ctx.effect 提供 disposer。
   ctx.effect(() => {
     const timer = setInterval(() => {
-      if (configSource().verbose) console.log(`[${name}] heartbeat (maxRetries=${configSource().maxRetries})`)
+      if (config.verbose.get()) {
+        console.log(`[${name}] heartbeat (maxRetries=${config.maxRetries.get()})`)
+      }
     }, 60_000)
     return () => clearInterval(timer)
   })
