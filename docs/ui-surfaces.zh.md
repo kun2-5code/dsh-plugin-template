@@ -29,12 +29,13 @@
 
 ## 配置表单（第 1 行）
 
-`plugins.bundle.config` 是 bundle 贡献自己配置页面的位置。Plugins 页会在 bundle 的描述与各行之间渲染这个条目，并传入两样东西：
+`plugins.bundle.config` 是 bundle 贡献自己配置页面的位置。Plugins 页会在 bundle 的描述与各行之间渲染这个条目，并且只传入一样东西：
 
 - `view: 'page'` —— 渲染表单。（`'summary'` 则只要一行描述；模版的卡片两种都处理。）
-- `form` —— `ConfigPageForm`，带宿主已接受的 `state` 和一个带 revision 围栏的 `mutate(ops, expectedRevision)`。
 
-因为表单由拥有方提供，这一页不读 `ctx.configForms`、不订阅 settings scope、也不调用 `ctx.get`。保存失败可以恢复：草稿放在组件状态里，`mutate` 在 `try`/`finally` 里 await。
+它**不传 `form`**。bundle 的表单只能来自 `ctx.configForms`，按插件的 settings 命名空间取。`ui-plugin-manager` 里的 `formFor()` 确实会构造 `ConfigPageForm`，但它只喂 `plugins.item` 和 `plugins.row.config`；组件从这个位置读 `form` 永远拿到 `undefined`，页面于是永远报"插件未加载"。`config-form.ts` 持有该命名空间的 `ConfigForm`，投影它的快照，并且只在事实变动时重新发布——这是渲染器的 hook 绑定所依赖的引用稳定性。组件自身不含任何订阅机制；写入经控制器出去，是一个普通回调，带着页面读到的那个 revision。
+
+保存失败可以恢复：草稿放在组件状态里，控制器的 `mutate` 在 `try`/`finally` 里 await。
 
 对应的宿主半边是 `src/index.ts` 里带 `.volatile()` 的 `Config` 字段。Loader 从 `cordis.patch.yml` 那一行的 `id` 派生出 settings 命名空间；没有白名单要加，也没有额外的注册要调。
 

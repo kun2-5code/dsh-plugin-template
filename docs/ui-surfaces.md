@@ -29,12 +29,13 @@ Row 1 is keyed by the package name from `NAMESPACE`; row 8 is keyed by `DEMO_COM
 
 ## The configuration form (row 1)
 
-`plugins.bundle.config` is the seat a bundle uses to contribute its own configuration page. The Plugins page renders the entry between the bundle's description and its rows, and passes two things:
+`plugins.bundle.config` is the seat a bundle uses to contribute its own configuration page. The Plugins page renders the entry between the bundle's description and its rows, and passes exactly one thing:
 
 - `view: 'page'` — render the form. (`'summary'` asks for a one-line description instead; the template's card handles both.)
-- `form` — `ConfigPageForm`, holding the host-accepted `state` and a revision-fenced `mutate(ops, expectedRevision)`.
 
-Because the owner supplies the form, the page does not read `ctx.configForms`, does not subscribe to a settings scope, and does not call `ctx.get`. A failed save is recoverable because the draft lives in component state and `mutate` is awaited inside `try`/`finally`.
+It passes **no `form`**. A bundle's form has to come from `ctx.configForms`, keyed by the plugin's settings namespace. `formFor()` in `ui-plugin-manager` builds a `ConfigPageForm`, but it feeds only `plugins.item` and `plugins.row.config`, so a component reading `form` from this seat always gets `undefined` and the page reports the plugin as not loaded. `config-form.ts` holds the namespace's `ConfigForm`, projects its snapshot, and republishes only when the fact moves — the reference stability the renderer's hook binding depends on. The component itself keeps no subscription machinery; writes go out through the controller as a plain callback carrying the revision the page read.
+
+A failed save is recoverable because the draft lives in component state and the controller's `mutate` is awaited inside `try`/`finally`.
 
 The matching host half is `Config` fields carrying `.volatile()` in `src/index.ts`. The Loader derives the settings namespace from the `id` of the row in `cordis.patch.yml`; there is no allowlist to add a plugin to and no separate registration to call.
 
