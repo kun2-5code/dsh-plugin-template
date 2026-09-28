@@ -1,188 +1,205 @@
 # dsh-plugin-template
 
-[English](README.md) | **简体中文**
+[English](README.md) | 中文
 
-DeepSeek Harness（`dsh`）插件模板：一个可直接运行、可直接安装的最小插件包，演示插件最常用的六种形态：
+[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）插件的开箱即用模版。它在一个最小可安装 bundle 里演示了最常见的几种插件形态：
 
-- **配置**：`Config` 接口 + Schemastery schema，校验与默认值在加载时生效（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/config.zh.md)）
-- **工具**：`ctx.tools.register(defineTool(...))` 注册模型可调用的工具（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/tool.zh.md)）
-- **事件**：`ctx.on` / `ctx.emit` + declaration merging 类型化事件（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.zh.md)）
-- **Service**：类形式插件，为其他插件提供服务（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.zh.md)）
-- **Hook**：`tools/pre-execute` 权限门示例，按配置拒绝工具调用（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.zh.md)）
-- **客户端 UI（浏览器半边）**：`src/client/` 在**十四个**面上注册浏览器 UI（索引见 [docs/ui-surfaces.zh.md](docs/ui-surfaces.zh.md)）：设置 → 插件 → Configurable 的**可点击配置卡片**（通过 settings 命名空间把 greeting / maxRetries / verbose 写进用户设置文档并实时生效；原版 harness 上卡片以只读"未暴露"状态渲染并说明原因，而不是消失）、左侧栏底部**操作按钮**、输入卡片上方**状态条**、全框架**浮层 pill**、会话标题右侧**工具徽标**、输入工具行**左右小按钮**、示例命令 `/dsh-demo` 的**自定义命令渲染行**、通用页**偏好行**、插件页**新 tab**、设置面板**头部操作**、会话标题旁**操作按钮**、输入卡片下方**状态条**、每条 AI 消息上的**操作按钮**——外加 `greet` 工具的 `presentResult` 渲染意图。只有配置卡片的数据路径受 harness 白名单门控，其余十三个是纯插槽注册，任何 harness 上装完即用
+- **Config** —— `Config` 接口加一个 Schemastery schema，其中可实时改写的字段带 `.volatile()`，于是 Plugins 页能在不重启的情况下编辑它们（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-settings-card.md)）
+- **Tool** —— `ctx.tools.register(defineTool(...))` 注册一个模型可调用的工具，并带 `card` 标签的渲染意图（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-tool.md)）
+- **Events** —— `ctx.on` / `ctx.emit`，用 declaration merging 得到带类型的事件（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.md)）
+- **Service** —— 类形式的插件，向其它插件提供一个服务（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.md)）
+- **Hook** —— 一个 `tools/pre-execute` 权限拦截器，按配置拒绝工具调用（[文档](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md)）
+- **浏览器半边（client）** —— `src/client/` 在 **十四个 UI 面** 上注册浏览器 UI（索引见 [docs/ui-surfaces.md](docs/ui-surfaces.md)）：Plugins 页上的**配置表单**、**侧栏底部动作**、输入卡片上方的**输入区 Dock**、**帧级浮层**、**会话头徽标**、输入卡片左右两端的**工具位按钮**、`/dsh-demo` 的**自定义命令行**、设置 → 通用 的**偏好行**、设置 → 插件 的**迁移页**、**设置页头部动作**、**会话头动作**、输入卡片下缘的**状态条**，以及 AI 回复上的**逐消息动作**；`greet` 工具另有一个 `presentResult` 渲染意图。
 
-本模板按官方 [bundle 分发模型](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.zh.md) 组织：包内声明 `dsh.bundle` 与 `cordis.patch.yml`，用户 `dsh plugin add` 后即作为配置层生效。
+模版遵循官方 [bundle 分发模型](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md)：包声明 `dsh.bundle` 与 `cordis.patch.yml`，`dsh plugin add` 把它作为一层配置激活。
 
 ## 目录结构
 
 ```
 dsh-plugin-template/
-├── package.json        # npm 包清单 + dsh.bundle / dsh.client 声明 + prepare 构建脚本
-├── tsconfig.json       # 严格模式类型检查配置（tsc --noEmit）
-├── tsdown.config.ts    # 构建配置：Node 库（lib/）+ 客户端 bundle（lib/client.js），自包含、供 git 安装时 prepare 使用
-├── cordis.patch.yml    # bundle 配置层：插入插件行
-├── dev/cordis.yml      # 本地开发 overlay（指向源码，配合 dsh web --patch；仅 host 半边）
+├── package.json        # npm manifest + dsh.bundle / dsh.client declarations + prepare build script
+├── tsconfig.json       # strict type-check configuration (tsc --noEmit)
+├── tsdown.config.ts    # build config: Node library (lib/) + client bundle (lib/client.js)
+├── vitest.config.ts    # unit test config (node by default; specs opt into jsdom)
+├── cordis.patch.yml    # bundle config layer: inserts the plugin rows
+├── locale/             # plugin display metadata read by the Plugins page
+│   ├── en.json         #   meta.title / meta.description (the discovery entry)
+│   └── zh.json
+├── icon.svg            # optional bundle card artwork
+├── dev/cordis.yml      # local dev overlay (points at source; use with dsh web --patch)
 ├── docs/
-│   └── ui-surfaces.zh.md  # 插件注册在哪些 UI 面上 + 插槽索引（英文版 ui-surfaces.md）
+│   ├── ui-surfaces.md  # where the plugin registers UI + index of every slot (bilingual: ui-surfaces.zh.md)
 ├── src/
-│   ├── index.ts        # 主插件：Config + 工具 + 事件 + effect，配置经 settings 命名空间实时接线
-│   ├── commands.ts     # host 半边：示例斜杠命令 /hello（回复 world）与 /dsh-demo（自定义渲染行）
-│   ├── service.ts      # 可选示例：Service 提供方（默认注释启用）
-│   ├── hook.ts         # 可选示例：hook 权限门（默认注释启用）
-│   └── client/         # 浏览器半边：每个 UI 面一个模块（见 docs/ui-surfaces.zh.md）
-│       ├── index.ts        # client 入口：inject + apply，组装各注册
-│       ├── constants.ts    # 共用 NAMESPACE / DEMO_COMMAND_NAME（与 package.json name / cordis.patch.yml 保持一致）
-│       ├── types.ts        # ctx 服务的最小结构类型（不 import @deepseek-ai 客户端包）
-│       ├── styles.ts       # 一次性注入的 <style>，所有 dtpl-* class（只走主题变量）
-│       ├── config-card.ts  # settings.plugin.item：可点击配置卡片（暂存表单 + 状态说明）
-│       ├── sidebar-action.ts # sidebar.footer.action：侧栏底部按钮
-│       ├── input-dock.ts   # conversation.input.dock：输入卡片上方状态条（session 级）
-│       ├── shell-overlay.ts # shell.overlay：全框架浮层 pill
-│       ├── header-utilities.ts # conversation.session.header.utilities：会话头右侧工具徽标
-│       ├── input-left.ts   # conversation.input.left：工具行左端小按钮
-│       ├── input-right.ts  # conversation.input.right：发送键旁小按钮
-│       ├── commandview.ts  # conversation.chat.commandview：/dsh-demo 自定义渲染行
-│       ├── general-item.ts # settings.general.item：设置 → 通用 一行偏好开关
-│       ├── plugins-tab.ts  # settings.plugins.tab：插件页新 tab
-│       ├── settings-action.ts # settings.action：设置面板头部操作按钮
-│       ├── header-actions.ts # conversation.session.header.actions：会话标题旁操作按钮
-│       ├── composer-dock.ts  # conversation.composer.dock：输入卡片下方状态条
-│       └── assistant-actions.ts # conversation.chat.assistant-actions：消息操作按钮
-└── test/smoke.mjs      # 构建产物冒烟测试（含 settings 接线单测）
+│   ├── index.ts        # main plugin: Config + tool + events + effect
+│   ├── commands.ts     # host half: demo slash commands /hello (replies world) and /dsh-demo (custom row)
+│   ├── service.ts      # optional example: Service provider (disabled by default)
+│   ├── hook.ts         # optional example: hook permission gate (disabled by default)
+│   └── client/         # browser half: one module per UI surface (see docs/ui-surfaces.md)
+│       ├── index.ts        # client entry: inject + apply, registers the locale dictionary and styles
+│       ├── constants.ts    # shared NAMESPACE + LOCALE_NAMESPACE + DEMO_COMMAND_NAME
+│       ├── locales.ts      # typed en/zh dictionaries (all user-visible copy lives here)
+│       ├── styles.ts       # one injected <style> with all dtpl-* classes (theme tokens only)
+│       ├── config-card.tsx # plugins.bundle.config: the configuration form on the Plugins page
+│       ├── sidebar-action.tsx # sidebar.footer.action
+│       ├── input-dock.tsx  # conversation.input.dock
+│       ├── shell-overlay.tsx # shell.overlay
+│       ├── header-utilities.tsx # conversation.session.header.utilities
+│       ├── input-left.tsx  # conversation.input.left
+│       ├── input-right.tsx # conversation.input.right
+│       ├── commandview.tsx # conversation.chat.commandview
+│       ├── general-item.tsx # settings.general.item
+│       ├── plugins-tab.tsx # settings.plugins.tab
+│       ├── settings-action.tsx # settings.action
+│       ├── header-actions.tsx # conversation.session.header.actions
+│       ├── composer-dock.tsx # conversation.composer.dock
+│       └── assistant-actions.tsx # conversation.chat.assistant-actions
+└── test/smoke.mjs      # smoke test on the build output
+└── tests/              # unit tests
+    ├── host-half.spec.ts   # the host half on a real cordis Context
+    ├── slot-registration.client.spec.ts # every surface registers, and leaves with the fiber
+    ├── config-card.client.spec.tsx       # the configuration form's user-visible behavior
+    ├── surfaces.client.spec.tsx          # command row, sidebar, input, per-message button
+    ├── locale-and-styles.client.spec.ts  # dictionary and stylesheet rules
+    └── support/           # test doubles: slot registry, locale
 ```
 
 ## 快速开始
 
-### 作为 bundle 安装（给用户用）
+### 作为 bundle 安装（给使用者）
 
-在任意目录，把本包（或你 fork 后的仓库）装进 dsh profile：
+在任意目录里把这个包（或你的 fork）装进一个 dsh profile：
 
 ```sh
-# 本地目录
+# local directory
 dsh plugin --profile demo add /path/to/dsh-plugin-template
 
-# 或直接从 GitHub 安装（模板 fork 后替换为你自己的仓库）
+# or directly from GitHub (replace with your own repo after forking)
 dsh plugin --profile demo add github:you/dsh-plugin-template
 ```
 
-GitHub 安装拉取的是**源码**，pnpm 会运行 `prepare`（即 `tsdown`）构建 `lib/`；pnpm ≥10 首次会拒绝执行 git 依赖的 prepare，把 pnpm 打印的包名加进 profile 的 `pnpm-workspace.yaml` 后重试：
+从 GitHub 安装会拉**源码**，pnpm 随后执行 `prepare`（即 `tsdown`）构建出 `lib/`。pnpm ≥10 会拒绝第一次 git 依赖的 prepare；把 pnpm 打印出来的包名加进该 profile 的 `pnpm-workspace.yaml` 再重试：
 
 ```yaml
 allowBuilds:
   dsh-plugin-template: true
 ```
 
-> 该 allowlist 相当于授权在安装时执行该包的代码，只应允许你信任的源码，并建议锁定 commit：`github:you/dsh-plugin-template#<sha>`。
+> 这份白名单授权在安装时执行该包的代码——只允许你信任的源码，并且优先固定到某个提交：`github:you/dsh-plugin-template#<sha>`。
 
-验证配置层并启动：
+确认配置层并启动：
 
 ```sh
-dsh --profile demo --dump-config   # 应看到 "# == dsh-plugin-template" 层
+dsh --profile demo --dump-config   # should show a "# == dsh-plugin-template" layer
 dsh --profile demo
 ```
 
-> 注意：自定义名字的 profile（如 `demo`）只含 `dsh-base`，是 **headless**（无 GUI）。
-> 要看 Web GUI 和下面的配置卡片，用 `web` profile（= `dsh-base` + `dsh-web-app`），见[测试配置卡片](#测试配置卡片在-gui-点击修改)。
+> 注意：自定义名字的 profile（例如 `demo`）只含 `dsh-base`，是**无 GUI** 的。
+> 要用 Web GUI 和下面的配置表单，请用 `web` profile（`= dsh-base` + `dsh-web-app`）——见[在 GUI 里测试配置表单](#testing-the-configuration-form-in-the-gui)。
 
-### 本地开发（改插件）
+### 本地开发（修改插件时）
 
-在 [deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) 源码根目录，用 overlay 直接加载本仓库源码（免安装、免构建）：
+在 [deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) 源码仓库的根目录，用一个 overlay 直接加载本仓库的源码（无需安装、无需构建）：
 
 ```sh
 pnpm dsh web --patch /absolute/path/to/dsh-plugin-template/dev/cordis.yml
 ```
 
-把 `dev/cordis.yml` 里的 `name` 改成这个仓库在你机器上的绝对路径，然后打开 `http://127.0.0.1:3080` 让模型调用 `greet` 工具试试。
+把 `dev/cordis.yml` 里的 `name` 改成本机上的绝对路径，打开 `http://127.0.0.1:3080`，让模型调用 `greet` 工具。
 
-> ⚠️ `--patch` overlay 只加载插件的 **host 半边**（模块路径解析不到包级声明）。
-> 要测试浏览器半边的配置卡片，必须走上面的 profile 安装（包以 `name: dsh-plugin-template` 解析），见下一节。
+> `--patch` overlay 只加载插件的**宿主半边**（模块解析够不到包级声明）。
+> 要测浏览器半边必须装进 profile（由 `name: dsh-plugin-template` 解析）——见下一节。
 
-开发循环内自己跑检查：
+开发时自己跑检查：
 
 ```sh
 pnpm install
 pnpm typecheck
+pnpm test:unit
 pnpm build
-node test/smoke.mjs
+pnpm smoke
+pnpm test
 ```
 
-> 如果本仓库**嵌在** `deepseek-harness` 检出里（如放在 harness 仓库根目录下的嵌套仓库），`pnpm install` 会被父 workspace 捕获，不会给本仓库装依赖（本仓库不是 workspace 成员）。此时用 `pnpm install --ignore-workspace`（pnpm ≥9.5），让模板用自己的 pnpm-lock.yaml 装出独立 node_modules；或者把模板单独 clone 出来开发。
+`typecheck` 用 `tsc` 检查源码、测试与构建配置。`test:unit` 跑 vitest 那几份 spec；`smoke` 跑在 `lib/` 上；`test` 按这个顺序全跑一遍。
 
-### 测试配置卡片（在 GUI 点击修改）
+> 如果本仓库位于 `deepseek-harness` 检出目录**内部**（就像在 harness 仓库根目录那样），`pnpm install` 会被上层 workspace 接管，在这里什么也装不上——模版不是 workspace 成员。请用 `pnpm install --ignore-workspace`，让它按自己的 lockfile 装自己的 `node_modules`；或者把模版单独 clone 到别处。
 
-配置卡片在浏览器里渲染，依赖 dsh 的 client-modules 按**包名**发现 `dsh.client` 声明，所以必须把包安装进 profile（`--patch` 源码路径不行）：
+<a id="testing-the-configuration-form-in-the-gui"></a>
+
+### 在 GUI 里测试配置表单
+
+表单在浏览器里渲染，依赖 dsh 的 client-modules **按包名**发现 `dsh.client` 声明，所以这个包必须装进 profile（`--patch` 的源码路径不行）：
 
 ```sh
-# 1. 构建（产物 lib/index.js + lib/client.js）
+# 1. Build (produces lib/index.js + lib/client.js)
 cd /path/to/dsh-plugin-template && pnpm build
 
-# 2. 装进 web profile（= dsh-base + dsh-web-app，带完整 GUI）
+# 2. Install into the web profile (= dsh-base + dsh-web-app, full GUI)
 dsh plugin --profile web add /path/to/dsh-plugin-template
 
-# 3. 启动 web GUI（`dsh web` 等价于 `dsh --profile web`）
+# 3. Boot the web GUI (`dsh web` is equivalent to `dsh --profile web`)
 dsh web
 ```
 
-打开 `http://127.0.0.1:3080`：
+打开 `http://127.0.0.1:3080`，进入侧栏的 **Plugins** 页，选中 **Plugin Template**：
 
-1. 左下角 **设置** → **插件** → **Configurable** 页，应看到一张 `dsh-plugin-template` 卡片。原版 harness 上它渲染为只读的"未暴露"状态卡（见下文）；完成 harness 一行改动后渲染为含 `greeting` / `maxRetries` / `verbose` 三个可编辑字段的表单；
-2. 把 `greeting` 改成别的值，点 **保存**，状态行应提示"修改后点击保存立即生效"；
-3. 回到会话，让模型调用 `greet` 工具，应看到新 greeting（host 半边实时读取命名空间解析值，无需重启）；
-4. 用户改动写进设置文档（`$DSH_HOME` 下的 `settings.yaml`），重启后依然生效；想恢复默认就在卡片里改回或清除对应字段。
+1. 该 bundle 的页面上会渲染出含 `greeting`、`maxRetries`、`verbose` 的配置表单；
+2. 改掉 `greeting` 并点**保存**——部署接受这些值，状态行确认成功；
+3. 回到会话里让模型调用 `greet` 工具——它用的是新的打招呼文案（宿主半边每次调用都读 `config.greeting.get()`，不需要重启）；
+4. 改动会落进 `$DSH_HOME` 下的设置文档并在重启后保留。**恢复默认**会清除该字段，让它重新继承 `cordis.patch.yml` 里的值。
 
-改动 client 半边（`src/client/`）后重跑 `pnpm build` 即可，刷新页面（client bundle 带 rev 缓存失效）生效。
+没有白名单要改，也不需要重启步骤：只要插件条目的 `Config` 至少有一个 `.volatile()` 字段，命名空间就会被自动服务；Plugins 页把 `form`（已接受的值加一个带 revision 围栏的 `mutate`）交给这个页面。
 
-### 原版 harness 上的配置卡片（不改源码）
-
-卡片是浏览器插件（`src/client/config-card.ts`），通过 `settingsScope` 服务绑定 settings 命名空间 `dsh-plugin-template`。它在任何状态下都渲染——但原版 harness 上会渲染成只读的"未暴露"状态卡，而不是可编辑表单。原因：dsh 的 Web 网关只把白名单内的 settings 命名空间暴露给设置面板（`WEB_SETTINGS_NAMESPACES`，见 `packages/host/apiproxy/src/api-proxy.ts`），不在名单里的命名空间即使插件注册了，`settings.describe` 也会回答 `settings-not-exposed`。这是 harness 侧的注册决策点（同一段源码注释把"把暴露声明移进 `settings.register()`"标注为 deferred work），不是模板缺陷：内置卡片能渲染是因为它们的命名空间（`shell`、`agent-loop`…）在白名单里，而目前不存在插件侧把它加入白名单的通道——网关的 RPC 表是编译期固定的，也没有任何注册期标志。
-
-原版 harness 上零改动即可用的部分：
-- **整个 host 半边**——`greet` 工具、事件、Service、hook 权限门，包括**配置实时读取**：写入只在 Web RPC 层被门控，插件自身每次执行都读取命名空间的解析值；
-- **卡片插槽本身**：卡片出现在 设置 → 插件 → Configurable 页并说明暴露状态，而不是静默消失。
-
-要让卡片可编辑，二选一：
-1. 在 `WEB_SETTINGS_NAMESPACES` 里加一行 `'dsh-plugin-template'`（`packages/host/apiproxy/src/api-proxy.ts`；改完需重建/重启 harness，更新检出新代码后会丢失）：
-
-```ts
-const WEB_SETTINGS_NAMESPACES = [
-  'agent-loop', 'shell', 'locale', 'permission', 'ui-conversation', 'ui-theme', 'web-search-deepseek',
-  'dsh-plugin-template',   // ← 加这一行
-] as const
-```
-
-2. 等 harness 的 deferred work——把暴露声明移进 `settings.register()`——本模板已经按规范方式（`installSettingsSection`）注册命名空间，届时无需任何改动。
+改完客户端半边（`src/client/`）后，重新 `pnpm build` 并刷新页面（客户端 bundle 的 rev 查询会破缓存）。
 
 ## 改成你自己的插件
 
-1. 改包名：`package.json` 的 `name`（npm 名，如 `dsh-my-plugin`）、`src/index.ts` 的 `name`、`cordis.patch.yml` 里的 `id` 与 `name` 三处保持一致；改 `./service` 子路径时同步改 `exports`/`files`。**改包名后还要同步浏览器半边相关处**：`tsdown.config.ts` 里 client bundle 的 `id`（`__ModuleLoader__.load({ id })`）、`src/client/constants.ts` 的 `NAMESPACE`、`package.json` 的 `dsh.client`（若需要 `inject`）。
-2. 改 `Config` 接口与 `Config` schema：任何两个部署希望设置不同的值都必须是配置字段（[设计原则](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/config.zh.md#设计原则)）。配置已经接线到 settings 命名空间，GUI 卡片会自动按你的 schema 渲染出可编辑表单吗？——不会，卡片是 `src/client/config-card.ts` 里手写的；新增字段需要同步加一行输入框。
-3. 在 `apply` 里注册你的工具：`ctx.tools.register(defineTool({...}))`，`execute` 返回 `output.schema` 声明的规范值，`output.render` 纯函数负责模型可见渲染（[工具参考](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-tool.zh.md)）。
-4. 需要为其他插件提供能力时，启用 `src/service.ts` 并在 `cordis.patch.yml` 里取消对应行注释。
-5. 记得 `declare module '@deepseek-ai/cordis'` 合并 `Context` / `Events` 类型，跨包边界才类型安全。
-6. 需要拦截工具调用、做权限门或响应系统钩子时，启用 `src/hook.ts`（取消 `cordis.patch.yml` 里对应行注释）：`ctx.on('tools/pre-execute', ...)` 返回 `{ kind: 'deny', reason }` 或调用 `next()` 放行（[扩展插件形态](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.zh.md)）。
-7. 配置读取：`src/index.ts` 里所有配置读取点都走 `configSource()`（settings 命名空间解析值，回退 composition entry）。如果你在 `apply` 里基于配置做了注册级推导（如按配置注册不同工具），要在 `installSettingsSection` 的 `onChange` 里重建，而不是只在执行点读取（参考 [bash-local](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/shell/bash-local/src/index.ts) 的用法）。
+1. 改名时保持一致：`package.json` 的 `name`（npm 名，例如 `dsh-my-plugin`）、`src/index.ts` 的 `name`、`cordis.patch.yml` 的 `id`/`name`。**改名也牵动浏览器半边**：`tsdown.config.ts` 里客户端 bundle 的 `id`（`__ModuleLoader__.load({ id })`）、`src/client/constants.ts` 的 `NAMESPACE`（Plugins 页靠它做键）、`package.json` 的 `dsh.client.inject`，以及 `locale/en.json`。改 `./service` 子路径时，`exports`/`files` 也要一起改。
+2. 改 `Config` 接口与 schema：两次部署之间可能不同的一切都必须是配置字段（[设计原则](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/config.md#design-principles)）。用户应当能免重启修改的字段标上 `.volatile()`，并在读取处用 `.get()`。
+3. 在 `src/client/config-card.tsx` 的表单里为每个新的可编辑字段加一行：标签键、提示键，以及 `FIELDS` / `buildOps` / `draftValue` 里对应的分支。表单是手写的——它不会从你的 schema 自动渲染。
+4. 在 `apply` 里注册你的工具：`ctx.tools.register(defineTool({...}))`；`execute` 返回 `output.schema` 声明的正典值，`output.render` 是模型可见渲染的纯函数，`presentResult` 是 UI 渲染意图（[工具参考](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-tool.md)）。
+5. 要向其它插件提供能力时，启用 `src/service.ts` 并在 `cordis.patch.yml` 里取消注释它那一行。
+6. 记得用 `declare module '@deepseek-ai/cordis'` 合并 `Context` / `Events` 类型——这是跨包边界保持类型安全的手段。每个事件要写清 `@mode`，每个 payload 参数要写 `@param`。
+7. 要拦截工具调用或充当权限闸门时，启用 `src/hook.ts`（取消注释 `cordis.patch.yml` 里那一行）：`ctx.on('tools/pre-execute', ...)` 返回 `{ kind: 'deny', reason }` 表示拒绝，调用 `next()` 表示放行（[扩展点手册](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md)）。
+8. 每加一条用户可见文案，就在 `src/client/locales.ts` 的 `en` 与 `zh` 里各加一个键，并通过注册项 `locale` 选项提供的 `t` 席位读取；list 槽的标签用 thunk（`label: () => t('key')`），这样切换语言不需要重新注册。
 
-## 浏览器半边（client）是怎么工作的
+## 浏览器半边如何工作
 
-- `package.json` 声明 `dsh.client: { platform: "web" }` + `exports["./client"]` → dsh 的 client-modules 扫描到后，把 `lib/client.js` 作为浏览器插件加载；
-- client 入口（`src/client/index.ts`）组装每个 UI 面的注册——配置卡片（`settings.plugin.item`）、侧栏底部按钮（`sidebar.footer.action`）、输入区 Dock（`conversation.input.dock`）——见 [UI 注册面索引](docs/ui-surfaces.zh.md)；
-- 配置卡片通过 `settingsScope` 服务绑定 `dsh-plugin-template` 命名空间：读快照、暂存草稿、保存时逐字段 `set`（自带 revision 围栏）；
-- host 半边 `src/index.ts` 用 `installSettingsSection` 把配置注册成同名命名空间（cordis.yml 配置是 base 层），工具执行时惰性读取解析值 → 保存即生效；
-- 运行时 client 半边只依赖 `react`（浏览器平台模块表提供），其余一律走 ctx 服务，不 import 任何 `@deepseek-ai` 客户端包——改模板时请保持这个纪律。
+- `package.json` 声明 `dsh.client: { platform: "web" }` 加 `exports["./client"]`——dsh 的 client-modules 发现它，把 `lib/client.js` 当浏览器插件加载；
+- `lib/client.js` 是 `window.__ModuleLoader__.load({ id, factory })` 格式的惰性 CJS 工厂。`tsdown.config.ts` 手搓了这个格式；harness 仓库自己的 preset 在 `packages/client/tsdown.client.ts`，没有发布；
+- 客户端入口（`src/client/index.ts`）先通过 `ctx.effect` 注册 locale 字典与样式表——两者都随插件一起撤销——再逐个调用各面的 `register*`；
+- 每一面都通过 `ctx.slots.inject(name, () => ctx.slots.register(...))` 注册：它会等拥有方的声明出现，该声明消失时移除自己的贡献，并随插件 fiber 一起离开；
+- 运行时浏览器半边只依赖 `react`，由浏览器平台模块表提供。不在运行时 import 任何 `@deepseek-ai` 客户端包——它们只以 `import type` 出现，会被类型擦除。改模版时请保持这个纪律。
+
+## 测试
+
+`pnpm test:unit` 跑五份 spec。它们用真实的 cordis `Context`，所以 fiber、effect 与撤销的行为跟 profile 里一致：
+
+- `tests/host-half.spec.ts` —— 宿主半边在真实组装下的行为：greet 工具与两条命令完成注册；打招呼文案是每次调用现读，而不是加载时读一次；fiber 停用后工具随之消失。
+- `tests/slot-registration.client.spec.ts` —— 十四个面都落在已声明的槽位上；配置表单以包名为键，命令行以命令名为键；插件迁移页的标签是跟随语言的 thunk；撤销之后所有贡献、样式表与字典都不见了。
+- `tests/config-card.client.spec.tsx` —— 表单的用户可见行为：摘要与页面两种视图、加载中/不可用/只读三种状态、提交哪些写入并带哪个 revision、把字段改回部署默认值、既挡住保存又能被辅助技术读到的校验，以及两条保存失败路径之后表单仍然可用。
+- `tests/surfaces.client.spec.tsx` —— 命令行的三种状态（执行中、成功、失败）、侧栏按钮在 rail 态仍保有无障碍名称、输入区控件是显式的非 submit 按钮、逐消息按钮能定位到消息却不把 id 印在界面上。
+- `tests/locale-and-styles.client.spec.ts` —— 客户端两条容易悄悄退化的规则：每个 `t('…')` 的键都在字典里；样式表没有字面色值，`font-weight` 不超过 500。
+
+`test/smoke.mjs` 是另一回事，它跑在 `lib/` 上：检查构建产物能加载、工具与命令可用、权限拦截器既会拒绝也会转交。`pnpm test` 按 typecheck、单测、构建、smoke 的顺序全跑一遍。
+
+`tests/support/` 里的替身顶替 harness 的客户端服务。不能用真的：发布出去的客户端入口是浏览器 bundle，在导入时刻就调用 `window.__ModuleLoader__.load(...)`，在 Node 测试里把它物化出来会把第二份 React 拉进同一个进程。替身是 cordis 服务，因此保住了这里真正要紧的性质——贡献挂在调用方 fiber 上并随之撤销——也会对未声明的槽位抛错。它们的注释写明了保真与不保真的部分。
 
 ## 发布
 
-- **npm**：`pnpm publish`（`files` 已包含构建产物与补丁，无需额外步骤）
-- **tarball**：`pnpm pack`，用户 `dsh plugin --profile demo add ./dsh-plugin-template-0.1.0.tgz`
-- **git**：用户 `dsh plugin add github:you/dsh-plugin-template`（配合上面的 `allowBuilds`）
+- **npm**：`pnpm publish`（`files` 已包含构建产物、patch、元数据与图标）
+- **tarball**：`pnpm pack`，然后 `dsh plugin --profile demo add ./dsh-plugin-template-0.2.0.tgz`
+- **git**：`dsh plugin add github:you/dsh-plugin-template`（配合上面的 `allowBuilds` 步骤）
 
 ## 相关文档
 
-- 插件开发入门：[basic/index.zh.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/index.zh.md)
-- 插件配置：[basic/config.zh.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/config.zh.md)
-- 工具开发：[basic/tool.zh.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/tool.zh.md)
-- 打包与安装：[basic/publish.zh.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.zh.md)
-- 插件与生命周期：[framework/index.zh.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.zh.md)
-- 服务与依赖：[framework/service.zh.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.zh.md)
-- 事件系统：[framework/events.zh.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.zh.md)
-- Cordis 底层教程：[cordis-tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cordis-tutorial/index.zh.md)
+- 实时配置表单：[adding-a-settings-card.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-settings-card.md)
+- 插件开发导览：[basic/index.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/index.md)
+- 插件配置：[basic/config.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/config.md)
+- 工具开发：[basic/tool.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/tool.md)
+- 打包与安装：[basic/publish.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md)
+- 插件与生命周期：[framework/index.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md)
+- 服务与依赖：[framework/service.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/service.md)
+- 事件系统：[framework/events.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/events.md)
+- 客户端 UI 插槽：[subsystems/slots.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/slots.md)
+- Cordis 教程：[cordis-tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cordis-tutorial/index.md)

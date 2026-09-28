@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write dsh-plugin-template/README.md
+/dsh-plugin-template:
+  en: 43ac677a7468ad56
+  zh: ca68ab3fa2292894
+/dsh-plugin-template/directory-structure:
+  en: 7643416ab7e7e34f
+  zh: c5295d9510d025f5
+/dsh-plugin-template/quick-start:
+  en: 9535b10be9abb7a8
+  zh: 37665fe48339b410
+/dsh-plugin-template/quick-start/install-as-a-bundle-for-users:
+  en: edd00c432cc029d9
+  zh: e00b1b523bca39f4
+/dsh-plugin-template/quick-start/local-development-modifying-the-plugin:
+  en: 46708b0e1e780f57
+  zh: 7ea015e7bdd82370
+/dsh-plugin-template/quick-start/testing-the-configuration-form-in-the-gui:
+  en: 17a88bf5fecd6a16
+  zh: 26705ce264708926
+/dsh-plugin-template/making-it-your-own-plugin:
+  en: 0f2b9ba244f6af94
+  zh: c1c11d2c590a0cb9
+/dsh-plugin-template/how-the-browser-half-works:
+  en: 1ff16e89d0636cd7
+  zh: 58bd042464c6b584
+/dsh-plugin-template/tests:
+  en: 92930ca034152f54
+  zh: 02dd2bc044c07795
+/dsh-plugin-template/publishing:
+  en: 243a8cc7285614aa
+  zh: 524d4fffa036d63d
+/dsh-plugin-template/related-docs:
+  en: 48713e0e12a39638
+  zh: ef5909dbb826e29a
