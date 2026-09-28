@@ -14,8 +14,12 @@
  *   这条由 cordis 的 tracker 保证：经 `ctx.slots` 访问时服务上的 `this.ctx`
  *   就是调用方 fiber，与真实 `SlotRegistry` 同一机制。
  *
- * 不保真的部分：优先级裁决、store 轴、工厂槽、props 派生。改插槽种类或作用域
- * 时，真实行为要对照 docs/subsystems/slots.md 与 `SlotRegistry` 源码核对。
+ * 不保真的部分：**keyed 分发**、优先级裁决、store 轴、工厂槽、作用域分区、props
+ * 派生。keyed 那条是本插件真正依赖的轴：`conversation.chat.commandview` 与
+ * `plugins.bundle.config` 都按 key 选条目，而这个替身只按槽名归集，登记了选项也
+ * 证明不了分发时能选中。`slot-registration.client.spec.ts` 里那条走真实 SlotCore
+ * 的用例补的就是这个缺口。改插槽种类或作用域时，真实行为要对照
+ * docs/subsystems/slots.md 与 `SlotRegistry` 源码核对。
  */
 
 import { Service, type Context } from '@deepseek-ai/cordis'

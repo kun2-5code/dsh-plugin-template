@@ -7,6 +7,7 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
+import { SlotCore, type PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import { describe, expect, it } from 'vitest'
 import { apply, inject } from '../src/client/index.ts'
 import { TestConfigForms } from './support/config-forms.ts'
@@ -14,6 +15,21 @@ import { DEMO_COMMAND_NAME, LOCALE_NAMESPACE, NAMESPACE } from '../src/client/co
 import { isTestLocale, TestLocale } from './support/locale.ts'
 import { requireDouble } from './support/require-double.ts'
 import { isTestSlotRegistry, TestSlotRegistry } from './support/slot-registry.ts'
+
+/** 命令节点槽：自定义命令行是它的 keyed 子槽。 */
+const COMMAND_NODE = 'spec.commandNode'
+/** 自定义命令行槽，宿主按命令名分发。 */
+const COMMAND_VIEW = 'spec.commandView'
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    // 测试专属键，不复用 harness 的真实槽名：真实 SlotCore 的 register 按 SlotMap
+    // 定型，而 conversation.chat.node 的 spec 带富 owner/keyProps 类型，裸 spec
+    // 补不齐。要验的是 keyed 分发机制本身，不是 harness 的具体类型。
+    'spec.commandNode': { kind: 'keyed'; scope: 'session' }
+    'spec.commandView': { kind: 'keyed'; scope: 'session' }
+  }
+}
 
 /** 本插件贡献的全部槽位。 */
 const TARGETS = [
@@ -79,6 +95,37 @@ describe('browser half registration', () => {
       .toBe(DEMO_COMMAND_NAME)
 
     await fiber.dispose()
+  })
+
+  it('wins the keyed dispatch the host actually runs', async () => {
+    // 上面那条只证明选项被记下来了。替身是扁平的，没有 keyed 分发，所以注册真坏
+    // 掉它也照样绿。这里走真实的 SlotCore，并用宿主渲染时那句一模一样的谓词去找：
+    // scoped-slots.tsx 的 entriesOfSlot(key).find(e => e.options.key === entryKey)。
+    const core = new SlotCore()
+    // 声明 children 的条目必须真的消费对应的 renderSlot，否则注册就通不过类型。
+    const disposeShell = core.register(
+      { name: 'root', children: { [COMMAND_NODE]: { kind: 'keyed', scope: 'session' } } },
+      (props: PropsRenderSlots<'spec.commandNode'>) => props.renderSlot(COMMAND_NODE, {}),
+    )
+    const disposeNode = core.register(
+      { name: COMMAND_NODE, key: 'command', children: { [COMMAND_VIEW]: { kind: 'keyed', scope: 'session' } } },
+      (props: PropsRenderSlots<'spec.commandView'>) => props.renderSlot(COMMAND_VIEW, {}),
+    )
+    // 插件按真实形状注册：目标槽挂在宿主那个 keyed 条目的 children 表下。
+    const disposeEntry = core.register(
+      { name: COMMAND_VIEW, key: DEMO_COMMAND_NAME, locale: LOCALE_NAMESPACE },
+      () => null,
+    )
+
+    const entryKey = DEMO_COMMAND_NAME // 宿主传的是 command.name
+    const elected = core.entriesOfSlot(COMMAND_VIEW).find(e => e.options.key === entryKey)
+    expect(elected, `no entry holds the key '${entryKey}'`).toBeDefined()
+    // 未被占用的键才走兜底卡片；被占用却找不到才是故障。
+    expect(core.entriesOfSlot(COMMAND_VIEW).length).toBe(1)
+
+    disposeEntry()
+    disposeNode()
+    disposeShell()
   })
 
   it('gives every list entry an id and a numeric order', async () => {
