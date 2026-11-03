@@ -60,7 +60,6 @@ export class TestConfigForm<T> implements ConfigForm<T> {
       user: { ...user },
       revision: 1,
       writable,
-      mode: 'host',
     }
   }
 
