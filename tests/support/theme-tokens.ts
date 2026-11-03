@@ -14,7 +14,7 @@
  */
 
 /** 这些名字核对时对应的主题版本。 */
-export const VERIFIED_THEME_VERSION = '0.1.7-rc.2'
+export const VERIFIED_THEME_VERSION = '0.2.2-alpha.3'
 
 /** 本模版允许引用的主题令牌。 */
 export const VERIFIED_TOKENS: ReadonlySet<string> = new Set([
